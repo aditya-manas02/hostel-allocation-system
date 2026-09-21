@@ -6,6 +6,7 @@ import cycleRoutes from './cycle.routes.js';
 import preferenceRoutes from './preference.routes.js';
 import compatibilityRoutes from './compatibility.routes.js';
 import eligibilityRoutes from './eligibility.routes.js';
+import allocationRoutes from './allocation.routes.js';
 
 const router = Router();
 
@@ -21,5 +22,7 @@ router.use('/preferences', preferenceRoutes);
 router.use('/compatibility', compatibilityRoutes);
 router.use('/me/compatibility', compatibilityRoutes);
 router.use('/eligibility', eligibilityRoutes);
+router.use('/allocation', allocationRoutes);
+router.use('/drafts', allocationRoutes);
 
 export default router;
