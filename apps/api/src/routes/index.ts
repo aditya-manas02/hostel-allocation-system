@@ -3,6 +3,9 @@ import authRoutes from './auth.routes.js';
 import auditRoutes from './audit.routes.js';
 import inventoryRoutes from './inventory.routes.js';
 import cycleRoutes from './cycle.routes.js';
+import preferenceRoutes from './preference.routes.js';
+import compatibilityRoutes from './compatibility.routes.js';
+import eligibilityRoutes from './eligibility.routes.js';
 
 const router = Router();
 
@@ -14,5 +17,9 @@ router.use('/auth', authRoutes);
 router.use('/audit', auditRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/cycles', cycleRoutes);
+router.use('/preferences', preferenceRoutes);
+router.use('/compatibility', compatibilityRoutes);
+router.use('/me/compatibility', compatibilityRoutes);
+router.use('/eligibility', eligibilityRoutes);
 
 export default router;
