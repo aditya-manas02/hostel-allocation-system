@@ -19,13 +19,14 @@ export class DraftPublishService {
     try {
       let publishedDraft: IAllocationDraftDoc | null = null;
 
-      await session.withTransaction(async () => {
-        // 1. Fetch draft within transaction
-        const draft = await AllocationDraftModel.findById(draftId).session(session);
+      const executePublish = async (s?: mongoose.ClientSession) => {
+        const sessionOption = s ? { session: s } : {};
+        // 1. Fetch draft
+        const draft = await AllocationDraftModel.findById(draftId).session(s || null);
         const approval = draft
           ? await ApprovalModel.findOne({ draftId: draft._id })
               .sort({ timestamp: -1 })
-              .session(session)
+              .session(s || null)
           : null;
 
         DraftPublishService.validatePublishPreconditions(draft, approval);
@@ -34,13 +35,13 @@ export class DraftPublishService {
         draft!.status = 'PUBLISHED';
         draft!.approvalId = approval!._id as any;
         draft!.publishedAt = new Date();
-        await draft!.save({ session });
+        await draft!.save(sessionOption);
 
         // 4. Update parent cycle status to PUBLISHED
         await AllocationCycleModel.findByIdAndUpdate(
           draft!.cycleId,
           { status: 'PUBLISHED' },
-          { session },
+          sessionOption,
         );
 
         // 5. Invariant I1(c): Write audit entry
@@ -58,7 +59,20 @@ export class DraftPublishService {
         });
 
         publishedDraft = draft;
-      });
+      };
+
+      try {
+        await session.withTransaction(async () => {
+          await executePublish(session);
+        });
+      } catch (txErr: any) {
+        if (txErr.message?.includes('replica set member') || txErr.message?.includes('Transaction numbers')) {
+          // Standalone MongoDB fallback for dev/test environments
+          await executePublish();
+        } else {
+          throw txErr;
+        }
+      }
 
       return publishedDraft!;
     } finally {

@@ -115,7 +115,7 @@ router.post(
 router.post(
   '/drafts/:id/approve',
   authenticate,
-  requireRole('WARDEN', 'CHIEF_WARDEN', 'ADMIN'),
+  requireRole('WARDEN', 'CHIEF_WARDEN', 'ADMIN', 'SYSTEM_ADMIN'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const draftId = req.params.id;
