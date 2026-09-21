@@ -30,12 +30,12 @@ const BedSchema = new Schema<IBedDoc>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(_doc, ret: any) {
         ret.id = ret._id.toString();
-        ret.roomId = ret.roomId.toString();
-        ret.floorId = ret.floorId.toString();
-        ret.blockId = ret.blockId.toString();
-        ret.hostelId = ret.hostelId.toString();
+        ret.roomId = ret.roomId?.toString();
+        ret.floorId = ret.floorId?.toString();
+        ret.blockId = ret.blockId?.toString();
+        ret.hostelId = ret.hostelId?.toString();
         if (ret.currentOccupantId) {
           ret.currentOccupantId = ret.currentOccupantId.toString();
         }

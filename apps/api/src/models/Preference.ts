@@ -22,12 +22,12 @@ const PreferenceSchema = new Schema<IPreferenceDoc>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(_doc, ret: any) {
         ret.id = ret._id.toString();
-        ret.cycleId = ret.cycleId.toString();
-        ret.studentId = ret.studentId.toString();
-        ret.rankedHostelIds = ret.rankedHostelIds.map((h: any) => h.toString());
-        ret.requestedRoommateStudentIds = ret.requestedRoommateStudentIds.map((u: any) => u.toString());
+        ret.cycleId = ret.cycleId?.toString();
+        ret.studentId = ret.studentId?.toString();
+        ret.rankedHostelIds = ret.rankedHostelIds?.map((h: any) => h.toString());
+        ret.requestedRoommateStudentIds = ret.requestedRoommateStudentIds?.map((u: any) => u.toString());
         delete ret._id;
         delete ret.__v;
         return ret;

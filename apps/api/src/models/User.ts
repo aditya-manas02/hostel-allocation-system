@@ -24,7 +24,7 @@ const UserSchema = new Schema<IUserDoc>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(_doc, ret: any) {
         delete ret.passwordHash;
         ret.id = ret._id.toString();
         delete ret._id;

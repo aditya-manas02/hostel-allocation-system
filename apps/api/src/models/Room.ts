@@ -39,11 +39,11 @@ const RoomSchema = new Schema<IRoomDoc>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(_doc, ret: any) {
         ret.id = ret._id.toString();
-        ret.floorId = ret.floorId.toString();
-        ret.blockId = ret.blockId.toString();
-        ret.hostelId = ret.hostelId.toString();
+        ret.floorId = ret.floorId?.toString();
+        ret.blockId = ret.blockId?.toString();
+        ret.hostelId = ret.hostelId?.toString();
         delete ret._id;
         delete ret.__v;
         return ret;

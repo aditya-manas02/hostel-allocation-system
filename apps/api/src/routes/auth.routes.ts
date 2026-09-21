@@ -73,11 +73,11 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     };
 
     const accessToken = jwt.sign(tokenPayload, env.JWT_ACCESS_SECRET, {
-      expiresIn: env.JWT_ACCESS_EXPIRY,
+      expiresIn: env.JWT_ACCESS_EXPIRY as any,
     });
 
     const refreshToken = jwt.sign(tokenPayload, env.JWT_REFRESH_SECRET, {
-      expiresIn: env.JWT_REFRESH_EXPIRY,
+      expiresIn: env.JWT_REFRESH_EXPIRY as any,
     });
 
     await AuditService.log({

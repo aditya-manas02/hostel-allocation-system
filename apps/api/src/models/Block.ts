@@ -22,9 +22,9 @@ const BlockSchema = new Schema<IBlockDoc>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(_doc, ret: any) {
         ret.id = ret._id.toString();
-        ret.hostelId = ret.hostelId.toString();
+        ret.hostelId = ret.hostelId?.toString();
         delete ret._id;
         delete ret.__v;
         return ret;

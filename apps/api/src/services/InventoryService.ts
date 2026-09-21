@@ -4,17 +4,12 @@ import {
   RoomType,
   ROOM_TYPES,
   GENDER_DESIGNATIONS,
-  HostelSchema,
-  BlockSchema,
-  FloorSchema,
-  RoomSchema,
-  BedSchema,
 } from '@hostel/shared';
 import { HostelModel, IHostelDoc } from '../models/Hostel.js';
 import { BlockModel, IBlockDoc } from '../models/Block.js';
 import { FloorModel, IFloorDoc } from '../models/Floor.js';
-import { RoomModel, IRoomDoc } from '../models/Room.js';
-import { BedModel, IBedDoc } from '../models/Bed.js';
+import { RoomModel } from '../models/Room.js';
+import { BedModel } from '../models/Bed.js';
 import { AuditService } from './AuditService.js';
 
 export interface CSVImportRow {

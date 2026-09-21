@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { HostelSchema, BlockSchema, FloorSchema, RoomSchema, BedSchema } from '@hostel/shared';
+import { HostelSchema, BlockSchema } from '@hostel/shared';
 import { HostelModel } from '../models/Hostel.js';
 import { BlockModel } from '../models/Block.js';
 import { FloorModel } from '../models/Floor.js';

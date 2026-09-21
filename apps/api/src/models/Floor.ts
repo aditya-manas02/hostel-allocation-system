@@ -21,10 +21,10 @@ const FloorSchema = new Schema<IFloorDoc>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(_doc, ret: any) {
         ret.id = ret._id.toString();
-        ret.blockId = ret.blockId.toString();
-        ret.hostelId = ret.hostelId.toString();
+        ret.blockId = ret.blockId?.toString();
+        ret.hostelId = ret.hostelId?.toString();
         delete ret._id;
         delete ret.__v;
         return ret;

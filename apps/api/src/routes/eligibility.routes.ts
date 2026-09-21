@@ -30,7 +30,7 @@ router.get(
       }
 
       const report = EligibilityEngine.evaluate(
-        app.toObject(),
+        app.toObject() as any,
         cycle?.documentRequirements || ['STUDENT_ID', 'FEE_RECEIPT'],
       );
 

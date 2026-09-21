@@ -7,6 +7,7 @@ import preferenceRoutes from './preference.routes.js';
 import compatibilityRoutes from './compatibility.routes.js';
 import eligibilityRoutes from './eligibility.routes.js';
 import allocationRoutes from './allocation.routes.js';
+import wardenRoutes from './warden.routes.js';
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use('/me/compatibility', compatibilityRoutes);
 router.use('/eligibility', eligibilityRoutes);
 router.use('/allocation', allocationRoutes);
 router.use('/drafts', allocationRoutes);
+router.use('/warden', wardenRoutes);
 
 export default router;

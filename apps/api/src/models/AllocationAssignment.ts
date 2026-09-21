@@ -28,13 +28,13 @@ const AllocationAssignmentSchema = new Schema<IAllocationAssignmentDoc>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(_doc, ret: any) {
         ret.id = ret._id.toString();
-        ret.draftId = ret.draftId.toString();
-        ret.bedId = ret.bedId.toString();
-        ret.roomId = ret.roomId.toString();
-        ret.hostelId = ret.hostelId.toString();
-        ret.studentId = ret.studentId.toString();
+        ret.draftId = ret.draftId?.toString();
+        ret.bedId = ret.bedId?.toString();
+        ret.roomId = ret.roomId?.toString();
+        ret.hostelId = ret.hostelId?.toString();
+        ret.studentId = ret.studentId?.toString();
         if (ret.overrideId) ret.overrideId = ret.overrideId.toString();
         delete ret._id;
         delete ret.__v;

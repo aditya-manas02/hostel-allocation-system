@@ -46,9 +46,9 @@ const AllocationDraftSchema = new Schema<IAllocationDraftDoc>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(_doc, ret: any) {
         ret.id = ret._id.toString();
-        ret.cycleId = ret.cycleId.toString();
+        ret.cycleId = ret.cycleId?.toString();
         if (ret.approvalId) ret.approvalId = ret.approvalId.toString();
         delete ret._id;
         delete ret.__v;

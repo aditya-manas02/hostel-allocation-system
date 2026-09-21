@@ -21,11 +21,11 @@ const CompatibilityResponseSchema = new Schema<ICompatibilityResponseDoc>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(_doc, ret: any) {
         // INVARIANT I6: Never leak encrypted payload or raw answers in JSON representations
         delete ret.encryptedPayload;
         ret.id = ret._id.toString();
-        ret.studentId = ret.studentId.toString();
+        ret.studentId = ret.studentId?.toString();
         delete ret._id;
         delete ret.__v;
         return ret;
