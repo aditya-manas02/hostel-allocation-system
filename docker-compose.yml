@@ -1,0 +1,69 @@
+services:
+  mongo:
+    image: mongo:8.0
+    container_name: hostel-mongo
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./docker/mongo/init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
+    healthcheck:
+      test: >
+        mongosh --quiet --eval "
+          try {
+            const st = rs.status();
+            if (st.ok === 1) quit(0);
+            quit(1);
+          } catch (e) {
+            try {
+              rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] });
+              quit(0);
+            } catch (err) {
+              quit(1);
+            }
+          }
+        "
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: hostel-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: hostel-api
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongo:27017/hostel_db?replicaSet=rs0
+      - REDIS_URL=redis://redis:6379
+      - JWT_ACCESS_SECRET=docker-secret-access-token-key-change-in-production
+      - JWT_REFRESH_SECRET=docker-secret-refresh-token-key-change-in-production
+      - ENCRYPTION_KEY_V1=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      - ENCRYPTION_KEY_ACTIVE_VERSION=v1
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
+  redis_data:

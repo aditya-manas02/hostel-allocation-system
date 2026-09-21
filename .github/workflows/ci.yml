@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        options: >-
+          --replSet rs0
+          --health-cmd "mongosh --eval 'try { rs.status() } catch(e) { rs.initiate({ _id: \"rs0\", members: [{ _id: 0, host: \"localhost:27017\" }] }) }'"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 5
+
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type Check
+        run: pnpm typecheck
+
+      - name: Test (with coverage)
+        run: pnpm test
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://localhost:27017/hostel_test?replicaSet=rs0&directConnection=true
+          REDIS_URL: redis://localhost:6379
+          JWT_ACCESS_SECRET: test-access-secret-min-32-chars-long-value
+          JWT_REFRESH_SECRET: test-refresh-secret-min-32-chars-long-value
+          ENCRYPTION_KEY_V1: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+          ENCRYPTION_KEY_ACTIVE_VERSION: v1
+
+      - name: Build
+        run: pnpm build

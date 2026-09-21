@@ -1,0 +1,23 @@
+{
+  "name": "hostel-allocation-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.34.4",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test -- --coverage",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
+    "format:write": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "eslint": "^9.10.0",
+    "prettier": "^3.3.3",
+    "turbo": "^2.1.0",
+    "typescript": "^5.6.2"
+  }
+}
