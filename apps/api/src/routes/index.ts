@@ -8,6 +8,7 @@ import compatibilityRoutes from './compatibility.routes.js';
 import eligibilityRoutes from './eligibility.routes.js';
 import allocationRoutes from './allocation.routes.js';
 import wardenRoutes from './warden.routes.js';
+import { reportsRouter, publicRouter } from './reports.routes.js';
 
 const router = Router();
 
@@ -26,5 +27,7 @@ router.use('/eligibility', eligibilityRoutes);
 router.use('/allocation', allocationRoutes);
 router.use('/drafts', allocationRoutes);
 router.use('/warden', wardenRoutes);
+router.use('/reports', reportsRouter);
+router.use('/public', publicRouter);
 
 export default router;
