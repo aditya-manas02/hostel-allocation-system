@@ -29,6 +29,7 @@ const EnvSchema = z.object({
   SMS_PROVIDER: z.enum(['console']).default('console'),
 
   PUBLIC_API_KEY: z.string().default('hostel-p04-occupancy-api-key-secret'),
+  P04_API_KEY: z.string().default('p04-default-shared-key-2026'),
 });
 
 export const env = EnvSchema.parse(process.env);

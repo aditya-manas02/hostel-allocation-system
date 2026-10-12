@@ -64,6 +64,19 @@ services:
       redis:
         condition: service_healthy
 
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    container_name: hostel-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+    depends_on:
+      - api
+
 volumes:
   mongo_data:
   redis_data:

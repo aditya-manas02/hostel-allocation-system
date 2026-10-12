@@ -435,13 +435,13 @@ export default function HomePage() {
               📊 Allocation Reports &amp; Heatmap
             </Link>
             <a
-              href="http://localhost:5000/api/reports/export?type=occupancy"
+              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/reports/export?type=occupancy`}
               className="px-4 py-2 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition"
             >
               ⬇ Export Occupancy CSV
             </a>
             <a
-              href="http://localhost:5000/api/reports/export?type=overrides"
+              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/reports/export?type=overrides`}
               className="px-4 py-2 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition"
             >
               ⬇ Export Overrides Audit CSV
@@ -480,7 +480,7 @@ export default function HomePage() {
               Full Analytics Portal
             </Link>
             <a
-              href="http://localhost:5000/api/reports/export?type=occupancy"
+              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/reports/export?type=occupancy`}
               className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold shadow-sm transition"
             >
               Export Occupancy CSV
