@@ -38,7 +38,7 @@ export default function HomePage() {
               >
                 <div className="text-2xl mb-2">🎓</div>
                 <div className="font-bold text-slate-900 text-sm group-hover:text-blue-600">Student Portal</div>
-                <div className="text-xs text-slate-500 mt-1">Aarav Sharma</div>
+                <div className="text-xs text-slate-500 mt-1">Aditya Manas</div>
                 <div className="text-[11px] text-blue-600 font-medium mt-3">Enter Portal &rarr;</div>
               </button>
 

@@ -114,7 +114,7 @@ export default function LoginPage() {
                 <div>
                   <div className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
                     <span>🎓</span>
-                    <span>Student Portal (Aarav Sharma)</span>
+                    <span>Student Portal (Aditya Manas)</span>
                   </div>
                   <div className="text-[11px] text-blue-800/80 font-mono">student@university.edu</div>
                 </div>

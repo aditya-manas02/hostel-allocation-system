@@ -25,7 +25,7 @@ const mockEscalations: EscalationItem[] = [
     hostelCode: 'TB',
     roomNumber: '104',
     bedLabel: 'A',
-    studentName: 'Aarav Sharma',
+    studentName: 'Aditya Manas',
     studentRoll: '2023CS101',
     violationType: 'ACCESSIBILITY_MISMATCH',
     wardenName: 'Dr. R. K. Verma',

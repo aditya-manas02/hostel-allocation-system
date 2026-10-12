@@ -27,7 +27,7 @@ export const DEMO_USERS: Record<Role, UserSession> = {
   STUDENT: {
     id: 'student-001',
     email: 'student@university.edu',
-    fullName: 'Aarav Sharma',
+    fullName: 'Aditya Manas',
     role: 'STUDENT',
     studentRollNumber: '2023CS101',
   },
