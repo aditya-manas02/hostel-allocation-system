@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Role } from '@hostel/shared';
+import { API_BASE } from '../lib/api';
 
 export interface UserSession {
   id: string;
@@ -29,7 +30,7 @@ export const DEMO_USERS: Record<Role, UserSession> = {
     email: 'student@university.edu',
     fullName: 'Aditya Manas',
     role: 'STUDENT',
-    studentRollNumber: '2023CS101',
+    studentRollNumber: '12326241',
   },
   WARDEN: {
     id: 'warden-001',
@@ -98,8 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       // Attempt backend login
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${apiBase}/auth/login`, {
+      const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
