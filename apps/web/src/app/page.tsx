@@ -10,7 +10,13 @@ export default function HomePage() {
   const [occupancyData, setOccupancyData] = useState<OccupancyResponse | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
+  const [, setTick] = useState(0);
+
   useEffect(() => {
+    // Force immediate re-render when role changes
+    const handler = () => setTick((t) => t + 1);
+    window.addEventListener('hostel_role_switched', handler);
+
     // Attempt to fetch live campus occupancy stats from Cloud API
     setIsLoadingStats(true);
     fetchCampusOccupancy()
@@ -19,6 +25,8 @@ export default function HomePage() {
         console.info('[LiveStats] Using cached fallback stats:', err.message);
       })
       .finally(() => setIsLoadingStats(false));
+
+    return () => window.removeEventListener('hostel_role_switched', handler);
   }, []);
 
   // Total bed counts with live API fallback

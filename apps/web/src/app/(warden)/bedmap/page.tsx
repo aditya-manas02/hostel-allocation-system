@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import Link from 'next/link';
 
-interface BedItem {
+export interface BedItem {
   id: string;
   label: string;
   isAccessible: boolean;
@@ -21,9 +21,12 @@ interface BedItem {
   isOverridden?: boolean;
 }
 
-interface RoomItem {
+export interface RoomItem {
   id: string;
   roomNumber: string;
+  displayNumber: string;
+  block: string;
+  floor: number;
   type: 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'QUAD';
   capacity: number;
   gender: 'MALE' | 'FEMALE' | 'COED';
@@ -31,28 +34,211 @@ interface RoomItem {
   beds: BedItem[];
 }
 
+// Master generator for realistic rooms across all 5 hostels, 4 blocks, and 4 floors
+function generateRoomsForHostelBlockFloor(
+  hostelCode: string,
+  blockName: string,
+  floorNum: number
+): RoomItem[] {
+  const blockLetter = blockName.replace('Block ', '').trim();
+  const isGround = floorNum === 0;
+
+  // Occupant data pools per hostel gender designation
+  const maleNames = [
+    'Aarav Sharma', 'Kunal Verma', 'Vikramaditya Roy', 'Siddharth Nair',
+    'Manish Pandey', 'Devansh Saxena', 'Abhishek Jha', 'Nitin Rao',
+    'Gaurav Sen', 'Priyanshu Mishra', 'Tanmay Bose', 'Mayank Chawla',
+    'Rajesh Reddy', 'Kartik Iyer', 'Harshit Gupta', 'Aman Singh',
+    'Rishabh Jain', 'Chetan Mehta', 'Rohit Sharma', 'Swapnil Patil',
+    'Ayush Dubey', 'Deepak Chahar', 'Varun Chakraborty', 'Pranav Mishra',
+    'Shaurya Kapoor', 'Tarun Varma', 'Tushar Garg', 'Yash Singhal',
+  ];
+
+  const femaleNames = [
+    'Ananya Sharma', 'Priya Patel', 'Sneha Rao', 'Deepa Verma',
+    'Meera Nair', 'Diya Sengupta', 'Pooja Hegde', 'Ritu Roy',
+    'Shreya Ghoshal', 'Neha Kakkar', 'Radhika Merchant', 'Tanvi Shah',
+    'Bhavna Joshi', 'Kavita Singh', 'Isha Ambani', 'Swati Maliwal',
+    'Kritika Kamra', 'Aditi Rao', 'Pallavi Sharda', 'Divya Bharti',
+    'Aishwarya Rai', 'Simran Kaur', 'Harleen Deol', 'Smriti Mandhana',
+  ];
+
+  const internationalNames = [
+    'Alex Chen', 'Sarah Jenkins', 'Mohammed Al-Fassi', 'David Kim',
+    'Fatima Zahra', 'Liam O\'Connor', 'Elena Rostova', 'Kenji Sato',
+    'Carlos Rodriguez', 'Amina Yusuf', 'Lucas Silva', 'Chloe Martin',
+    'Tariq Mansoor', 'Yuki Tanaka', 'Zainab Ahmed', 'Oliver Smith',
+  ];
+
+  const isFemaleHostel = hostelCode === 'GB' || hostelCode === 'SB';
+  const isCoedHostel = hostelCode === 'KB';
+  const pool = isFemaleHostel ? femaleNames : isCoedHostel ? internationalNames : maleNames;
+  const genderType: RoomItem['gender'] = isFemaleHostel ? 'FEMALE' : isCoedHostel ? 'COED' : 'MALE';
+
+  // Seed offset based on hostel, block, and floor to ensure distinct occupants
+  const blockOffset = (blockLetter.charCodeAt(0) - 65) * 8;
+  const floorOffset = floorNum * 12;
+  const hostelOffset = (hostelCode.charCodeAt(0) + hostelCode.charCodeAt(1)) * 3;
+  const baseOffset = (blockOffset + floorOffset + hostelOffset) % pool.length;
+
+  // 8 rooms per floor in each block
+  const rooms: RoomItem[] = [1, 2, 3, 4, 5, 6, 7, 8].map((num) => {
+    const roomCode = isGround ? `G0${num}` : `${floorNum}0${num}`;
+    const displayNumber = `${blockLetter}-${roomCode}`;
+    const roomId = `${hostelCode.toLowerCase()}-${blockLetter.toLowerCase()}-${roomCode.toLowerCase()}`;
+
+    // Room type distribution: 1 Single, 4 Doubles, 2 Triples, 1 Quad
+    let type: RoomItem['type'] = 'DOUBLE';
+    let capacity = 2;
+
+    if (num === 2 || num === 8) {
+      type = 'SINGLE';
+      capacity = 1;
+    } else if (num === 3 || num === 7) {
+      type = 'TRIPLE';
+      capacity = 3;
+    } else if (num === 6) {
+      type = 'QUAD';
+      capacity = 4;
+    }
+
+    const isRoomAccessible = isGround;
+
+    // Check if this is Aditya Manas's room: Tagore Bhawan (TB), Block A, Floor 1, Room 104
+    const isAdityaRoom = hostelCode === 'TB' && blockLetter === 'A' && floorNum === 1 && num === 4;
+
+    const beds: BedItem[] = Array.from({ length: capacity }, (_, bIdx) => {
+      const label = String.fromCharCode(65 + bIdx);
+      const bedId = `${roomId}-${label.toLowerCase()}`;
+
+      // Special case: Aditya Manas in Room A-104
+      if (isAdityaRoom) {
+        if (bIdx === 0) {
+          return {
+            id: bedId,
+            label,
+            isAccessible: false,
+            status: 'OCCUPIED',
+            occupantName: 'Aditya Manas',
+            occupantRoll: '12326241',
+            occupantQuota: 'GENERAL',
+            explanation: {
+              preferenceRank: 1,
+              quotaBucket: 'GENERAL',
+              compatibilityScore: 82,
+              rationale:
+                'First choice preference satisfied in Pass A. Paired with mutual roommate request Rohan Gupta (Compatibility Score: 82/100).',
+            },
+          };
+        } else {
+          return {
+            id: bedId,
+            label,
+            isAccessible: false,
+            status: 'OCCUPIED',
+            occupantName: 'Rohan Gupta',
+            occupantRoll: '2023CS042',
+            occupantQuota: 'GENERAL',
+            explanation: {
+              preferenceRank: 1,
+              quotaBucket: 'GENERAL',
+              compatibilityScore: 82,
+              rationale:
+                'First choice preference satisfied in Pass A. Mutual roommate pairing with Aditya Manas (Compatibility Score: 82/100).',
+            },
+          };
+        }
+      }
+
+      // Ground floor PWD priority
+      if (isGround) {
+        const isOcc = bIdx === 0 || num % 2 === 1;
+        const nameIdx = (baseOffset + num * 2 + bIdx) % pool.length;
+        return {
+          id: bedId,
+          label,
+          isAccessible: true,
+          status: isOcc ? 'OCCUPIED' : 'AVAILABLE',
+          occupantName: isOcc ? pool[nameIdx] : undefined,
+          occupantRoll: isOcc ? `2023CS0${num * 5 + bIdx}` : undefined,
+          occupantQuota: bIdx === 0 ? 'PWD' : 'GENERAL',
+          explanation: isOcc
+            ? {
+                preferenceRank: 1,
+                quotaBucket: bIdx === 0 ? 'PWD' : 'GENERAL',
+                compatibilityScore: 88,
+                rationale:
+                  bIdx === 0
+                    ? 'Pass A Priority: Ground floor wheelchair accessible unit satisfied under PWD quota.'
+                    : 'Matched with assistive roommate under General Quota.',
+              }
+            : undefined,
+        };
+      }
+
+      // Regular floors: Leave a few realistic vacant beds for demoing reallocation
+      const isVacant = (num === 5 && bIdx === 1) || (num === 6 && bIdx === 3) || (num === 3 && bIdx === 2);
+      const nameIdx = (baseOffset + num * 3 + bIdx) % pool.length;
+
+      return {
+        id: bedId,
+        label,
+        isAccessible: false,
+        status: isVacant ? 'AVAILABLE' : 'OCCUPIED',
+        occupantName: isVacant ? undefined : pool[nameIdx],
+        occupantRoll: isVacant ? undefined : `2023${blockLetter}${100 + num * 10 + bIdx}`,
+        occupantQuota: num === 2 ? 'SCHOLARSHIP' : num === 5 ? 'SPORTS' : 'GENERAL',
+        explanation: isVacant
+          ? undefined
+          : {
+              preferenceRank: num % 2 === 0 ? 1 : 2,
+              quotaBucket: num === 2 ? 'SCHOLARSHIP' : num === 5 ? 'SPORTS' : 'GENERAL',
+              compatibilityScore: 78 + (num % 15),
+              rationale: `Choice #${num % 2 === 0 ? 1 : 2} satisfied in regular allocation pass.`,
+            },
+      };
+    });
+
+    return {
+      id: roomId,
+      roomNumber: roomCode,
+      displayNumber,
+      block: blockName,
+      floor: floorNum,
+      type,
+      capacity,
+      gender: genderType,
+      isAccessible: isRoomAccessible,
+      beds,
+    };
+  });
+
+  return rooms;
+}
+
 export default function WardenBedMapPage() {
   const { user } = useAuth();
 
   // Hostels list
   const hostels = [
-    { code: 'TB', name: 'Tagore Bhawan', gender: 'MALE', capacity: 1605, roomsCount: 592 },
-    { code: 'GB', name: 'Gargi Bhawan', gender: 'FEMALE', capacity: 1629, roomsCount: 604 },
-    { code: 'SB', name: 'Sarojini Bhawan', gender: 'FEMALE', capacity: 1612, roomsCount: 598 },
-    { code: 'AB', name: 'Aryabhatta Bhawan', gender: 'MALE', capacity: 1581, roomsCount: 584 },
-    { code: 'KB', name: 'Kalam International House', gender: 'COED', capacity: 1588, roomsCount: 572 },
+    { code: 'TB', name: 'Tagore Bhawan', gender: 'MALE', capacity: 1605, roomsCount: 592, icon: '🏛️' },
+    { code: 'GB', name: 'Gargi Bhawan', gender: 'FEMALE', capacity: 1629, roomsCount: 604, icon: '🌸' },
+    { code: 'SB', name: 'Sarojini Bhawan', gender: 'FEMALE', capacity: 1612, roomsCount: 598, icon: '🌿' },
+    { code: 'AB', name: 'Aryabhatta Bhawan', gender: 'MALE', capacity: 1581, roomsCount: 584, icon: '🔭' },
+    { code: 'KB', name: 'Kalam International House', gender: 'COED', capacity: 1588, roomsCount: 572, icon: '🌍' },
   ];
 
   // Selected filters
-  const [selectedHostelCode, setSelectedHostelCode] = useState<string>(
-    user?.role === 'WARDEN' ? 'TB' : 'TB'
-  );
+  const [selectedHostelCode, setSelectedHostelCode] = useState<string>('TB');
   const [selectedBlock, setSelectedBlock] = useState('Block A');
   const [selectedFloor, setSelectedFloor] = useState(1);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OCCUPIED' | 'AVAILABLE' | 'OVERRIDDEN' | 'ACCESSIBLE'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Selected Bed for drawer / modal
+  // Overridden beds map across the session: { [bedId]: BedItem }
+  const [overridesMap, setOverridesMap] = useState<Record<string, Partial<BedItem>>>({});
+
+  // Selected Bed for drawer / inspector
   const [selectedBed, setSelectedBed] = useState<{ room: RoomItem; bed: BedItem } | null>(null);
 
   // Override Modal state (Invariant I5)
@@ -64,364 +250,30 @@ export default function WardenBedMapPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [draftStatus, setDraftStatus] = useState<'UNDER_REVIEW' | 'APPROVED'>('UNDER_REVIEW');
 
-  // Realistic mock data factory per hostel and floor
-  const [roomsData, setRoomsData] = useState<Record<string, RoomItem[]>>({
-    'TB-Block A-1': [
-      {
-        id: 'tb-101',
-        roomNumber: '101',
-        type: 'DOUBLE',
-        capacity: 2,
-        gender: 'MALE',
-        isAccessible: false,
-        beds: [
-          {
-            id: 'tb-101-a',
-            label: 'A',
-            isAccessible: false,
-            status: 'OCCUPIED',
-            occupantName: 'Aarav Sharma',
-            occupantRoll: '2023CS012',
-            occupantQuota: 'GENERAL',
-            explanation: {
-              preferenceRank: 1,
-              quotaBucket: 'GENERAL',
-              compatibilityScore: 84,
-              rationale: 'Choice #1 satisfied in Pass A. Lifestyle compatibility score: 84/100.',
-            },
-          },
-          {
-            id: 'tb-101-b',
-            label: 'B',
-            isAccessible: false,
-            status: 'OCCUPIED',
-            occupantName: 'Kunal Verma',
-            occupantRoll: '2023CS018',
-            occupantQuota: 'GENERAL',
-            explanation: {
-              preferenceRank: 1,
-              quotaBucket: 'GENERAL',
-              compatibilityScore: 84,
-              rationale: 'Choice #1 satisfied in Pass A. Paired with early-bird roommate.',
-            },
-          },
-        ],
-      },
-      {
-        id: 'tb-102',
-        roomNumber: '102',
-        type: 'SINGLE',
-        capacity: 1,
-        gender: 'MALE',
-        isAccessible: false,
-        beds: [
-          {
-            id: 'tb-102-a',
-            label: 'A',
-            isAccessible: false,
-            status: 'OCCUPIED',
-            occupantName: 'Vikramaditya Roy',
-            occupantRoll: '2023CS031',
-            occupantQuota: 'SCHOLARSHIP',
-            explanation: {
-              preferenceRank: 1,
-              quotaBucket: 'SCHOLARSHIP',
-              compatibilityScore: null,
-              rationale: 'Rank #1 Single Room matched under Merit Scholarship Quota.',
-            },
-          },
-        ],
-      },
-      {
-        id: 'tb-103',
-        roomNumber: '103',
-        type: 'TRIPLE',
-        capacity: 3,
-        gender: 'MALE',
-        isAccessible: false,
-        beds: [
-          {
-            id: 'tb-103-a',
-            label: 'A',
-            isAccessible: false,
-            status: 'OCCUPIED',
-            occupantName: 'Siddharth Nair',
-            occupantRoll: '2023EE102',
-            occupantQuota: 'GENERAL',
-            explanation: {
-              preferenceRank: 2,
-              quotaBucket: 'GENERAL',
-              compatibilityScore: 78,
-              rationale: 'Rank #2 choice matched in Pass B.',
-            },
-          },
-          {
-            id: 'tb-103-b',
-            label: 'B',
-            isAccessible: false,
-            status: 'OCCUPIED',
-            occupantName: 'Manish Pandey',
-            occupantRoll: '2023EE115',
-            occupantQuota: 'GENERAL',
-            explanation: {
-              preferenceRank: 2,
-              quotaBucket: 'GENERAL',
-              compatibilityScore: 78,
-              rationale: 'Rank #2 choice matched in Pass B.',
-            },
-          },
-          {
-            id: 'tb-103-c',
-            label: 'C',
-            isAccessible: false,
-            status: 'AVAILABLE',
-          },
-        ],
-      },
-      {
-        id: 'tb-104',
-        roomNumber: '104',
-        type: 'DOUBLE',
-        capacity: 2,
-        gender: 'MALE',
-        isAccessible: false,
-        beds: [
-          {
-            id: 'tb-104-a',
-            label: 'A',
-            isAccessible: false,
-            status: 'OCCUPIED',
-            occupantName: 'Aditya Manas',
-            occupantRoll: '12326241',
-            occupantQuota: 'GENERAL',
-            explanation: {
-              preferenceRank: 1,
-              quotaBucket: 'GENERAL',
-              compatibilityScore: 82,
-              rationale:
-                'First choice preference satisfied in Pass A. Paired with mutual roommate request Rohan Gupta (Score: 82/100).',
-            },
-          },
-          {
-            id: 'tb-104-b',
-            label: 'B',
-            isAccessible: false,
-            status: 'OCCUPIED',
-            occupantName: 'Rohan Gupta',
-            occupantRoll: '2023CS042',
-            occupantQuota: 'GENERAL',
-            explanation: {
-              preferenceRank: 1,
-              quotaBucket: 'GENERAL',
-              compatibilityScore: 82,
-              rationale:
-                'First choice preference satisfied in Pass A. Mutual roommate pairing with Aditya Manas.',
-            },
-          },
-        ],
-      },
-      {
-        id: 'tb-105',
-        roomNumber: '105',
-        type: 'DOUBLE',
-        capacity: 2,
-        gender: 'MALE',
-        isAccessible: false,
-        beds: [
-          {
-            id: 'tb-105-a',
-            label: 'A',
-            isAccessible: false,
-            status: 'OCCUPIED',
-            occupantName: 'Devansh Saxena',
-            occupantRoll: '2023ME044',
-            occupantQuota: 'SPORTS',
-            explanation: {
-              preferenceRank: 1,
-              quotaBucket: 'SPORTS',
-              compatibilityScore: 79,
-              rationale: 'Sports quota preference satisfied.',
-            },
-          },
-          {
-            id: 'tb-105-b',
-            label: 'B',
-            isAccessible: false,
-            status: 'AVAILABLE',
-          },
-        ],
-      },
-      {
-        id: 'tb-106',
-        roomNumber: '106',
-        type: 'QUAD',
-        capacity: 4,
-        gender: 'MALE',
-        isAccessible: false,
-        beds: [
-          {
-            id: 'tb-106-a',
-            label: 'A',
-            isAccessible: false,
-            status: 'OCCUPIED',
-            occupantName: 'Abhishek Jha',
-            occupantRoll: '2023CE012',
-            occupantQuota: 'GENERAL',
-            explanation: { preferenceRank: 1, quotaBucket: 'GENERAL', compatibilityScore: 75, rationale: 'Standard Quad allocation' },
-          },
-          {
-            id: 'tb-106-b',
-            label: 'B',
-            isAccessible: false,
-            status: 'OCCUPIED',
-            occupantName: 'Nitin Rao',
-            occupantRoll: '2023CE019',
-            occupantQuota: 'GENERAL',
-            explanation: { preferenceRank: 1, quotaBucket: 'GENERAL', compatibilityScore: 75, rationale: 'Standard Quad allocation' },
-          },
-          {
-            id: 'tb-106-c',
-            label: 'C',
-            isAccessible: false,
-            status: 'OCCUPIED',
-            occupantName: 'Gaurav Sen',
-            occupantRoll: '2023CE024',
-            occupantQuota: 'GENERAL',
-            explanation: { preferenceRank: 1, quotaBucket: 'GENERAL', compatibilityScore: 75, rationale: 'Standard Quad allocation' },
-          },
-          {
-            id: 'tb-106-d',
-            label: 'D',
-            isAccessible: false,
-            status: 'AVAILABLE',
-          },
-        ],
-      },
-    ],
-    // Accessible Ground Floor Sample
-    'TB-Block A-0': [
-      {
-        id: 'tb-001',
-        roomNumber: 'G01',
-        type: 'DOUBLE',
-        capacity: 2,
-        gender: 'MALE',
-        isAccessible: true,
-        beds: [
-          {
-            id: 'tb-001-a',
-            label: 'A',
-            isAccessible: true,
-            status: 'OCCUPIED',
-            occupantName: 'Harsh Vardhan',
-            occupantRoll: '2023CS004',
-            occupantQuota: 'PWD',
-            explanation: {
-              preferenceRank: 1,
-              quotaBucket: 'PWD',
-              compatibilityScore: 90,
-              rationale: 'Pass A Priority: Ground floor wheelchair accessible unit satisfied under PWD quota.',
-            },
-          },
-          {
-            id: 'tb-001-b',
-            label: 'B',
-            isAccessible: true,
-            status: 'OCCUPIED',
-            occupantName: 'Samir Joshi',
-            occupantRoll: '2023CS009',
-            occupantQuota: 'GENERAL',
-            explanation: {
-              preferenceRank: 1,
-              quotaBucket: 'GENERAL',
-              compatibilityScore: 90,
-              rationale: 'Paired with consenting assistive roommate. Compatibility: 90/100.',
-            },
-          },
-        ],
-      },
-      {
-        id: 'tb-002',
-        roomNumber: 'G02',
-        type: 'SINGLE',
-        capacity: 1,
-        gender: 'MALE',
-        isAccessible: true,
-        beds: [
-          {
-            id: 'tb-002-a',
-            label: 'A',
-            isAccessible: true,
-            status: 'OCCUPIED',
-            occupantName: 'Arjun Das',
-            occupantRoll: '2023EE002',
-            occupantQuota: 'PWD',
-            explanation: {
-              preferenceRank: 1,
-              quotaBucket: 'PWD',
-              compatibilityScore: null,
-              rationale: 'Single accessible room allocated under PWD quota.',
-            },
-          },
-        ],
-      },
-    ],
-  });
+  // Currently active hostel object
+  const currentHostel = useMemo(() => {
+    return hostels.find((h) => h.code === selectedHostelCode) || hostels[0]!;
+  }, [selectedHostelCode, hostels]);
 
-  // Current floor key
-  const currentKey = `${selectedHostelCode}-${selectedBlock}-${selectedFloor}`;
-
-  // Fallback room generator if a key doesn't exist yet
+  // Compute rooms for currently selected Hostel, Block, and Floor
   const currentRooms = useMemo(() => {
-    if (roomsData[currentKey]) {
-      return roomsData[currentKey];
-    }
-    // Generate realistic rooms on the fly for any block/floor/hostel
-    const generated: RoomItem[] = [1, 2, 3, 4, 5, 6].map((num) => {
-      const roomNum = selectedFloor === 0 ? `G0${num}` : `${selectedFloor}0${num}`;
-      const type: RoomItem['type'] = num === 2 ? 'SINGLE' : num === 3 ? 'TRIPLE' : 'DOUBLE';
-      const cap = type === 'SINGLE' ? 1 : type === 'TRIPLE' ? 3 : 2;
-      const isAcc = selectedFloor === 0;
+    const rawRooms = generateRoomsForHostelBlockFloor(
+      selectedHostelCode,
+      selectedBlock,
+      selectedFloor
+    );
 
-      const beds: BedItem[] = Array.from({ length: cap }, (_, bIdx) => {
-        const label = String.fromCharCode(65 + bIdx);
-        const isOcc = num !== 5 || bIdx === 0;
-        return {
-          id: `${selectedHostelCode.toLowerCase()}-${roomNum}-${label.toLowerCase()}`,
-          label,
-          isAccessible: isAcc,
-          status: isOcc ? 'OCCUPIED' : 'AVAILABLE',
-          occupantName: isOcc ? `Student ${selectedHostelCode}-${roomNum}${label}` : undefined,
-          occupantRoll: isOcc ? `2023CS${100 + num * 10 + bIdx}` : undefined,
-          occupantQuota: 'GENERAL',
-          explanation: isOcc
-            ? {
-                preferenceRank: 1,
-                quotaBucket: 'GENERAL',
-                compatibilityScore: 80,
-                rationale: 'Choice #1 satisfied in regular allocation pass.',
-              }
-            : undefined,
-        };
-      });
-
-      return {
-        id: `${selectedHostelCode.toLowerCase()}-${roomNum}`,
-        roomNumber: roomNum,
-        type,
-        capacity: cap,
-        gender: (selectedHostelCode === 'GB' || selectedHostelCode === 'SB'
-          ? 'FEMALE'
-          : selectedHostelCode === 'KB'
-          ? 'COED'
-          : 'MALE') as any,
-        isAccessible: isAcc,
-        beds,
-      };
-    });
-
-    return generated;
-  }, [roomsData, currentKey, selectedHostelCode, selectedBlock, selectedFloor]);
+    // Apply any overrides previously committed by the user
+    return rawRooms.map((room) => ({
+      ...room,
+      beds: room.beds.map((bed) => {
+        if (overridesMap[bed.id]) {
+          return { ...bed, ...overridesMap[bed.id] };
+        }
+        return bed;
+      }),
+    }));
+  }, [selectedHostelCode, selectedBlock, selectedFloor, overridesMap]);
 
   // Filtered rooms based on status and search query
   const filteredRooms = useMemo(() => {
@@ -437,7 +289,7 @@ export default function WardenBedMapPage() {
           // Search query filter
           if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase().trim();
-            const roomMatch = room.roomNumber.toLowerCase().includes(q);
+            const roomMatch = room.displayNumber.toLowerCase().includes(q) || room.roomNumber.toLowerCase().includes(q);
             const occupantMatch = bed.occupantName?.toLowerCase().includes(q);
             const rollMatch = bed.occupantRoll?.toLowerCase().includes(q);
             if (!roomMatch && !occupantMatch && !rollMatch) return false;
@@ -450,7 +302,7 @@ export default function WardenBedMapPage() {
       .filter((r) => r.beds.length > 0);
   }, [currentRooms, statusFilter, searchQuery]);
 
-  // Stats for the current view
+  // Stats for the active block & floor
   const currentTotalBeds = currentRooms.reduce((sum, r) => sum + r.beds.length, 0);
   const currentOccupiedBeds = currentRooms.reduce(
     (sum, r) => sum + r.beds.filter((b) => b.status === 'OCCUPIED').length,
@@ -468,41 +320,28 @@ export default function WardenBedMapPage() {
     }
 
     if (selectedBed) {
-      const updatedRooms = currentRooms.map((r) => {
-        if (r.id === selectedBed.room.id) {
-          return {
-            ...r,
-            beds: r.beds.map((b) => {
-              if (b.id === selectedBed.bed.id) {
-                return {
-                  ...b,
-                  status: 'OCCUPIED' as const,
-                  occupantName: `${newOccupantName} (Override)`,
-                  isOverridden: true,
-                  explanation: {
-                    preferenceRank: null,
-                    quotaBucket: 'MANUAL_OVERRIDE',
-                    compatibilityScore: 80,
-                    rationale: `Manual override [${overrideCategory}]: ${overrideReason}${
-                      isEscalated ? ' (Escalated to Chief Warden)' : ''
-                    }`,
-                  },
-                };
-              }
-              return b;
-            }),
-          };
-        }
-        return r;
-      });
+      const bedId = selectedBed.bed.id;
+      const overrideData: Partial<BedItem> = {
+        status: 'OCCUPIED',
+        occupantName: `${newOccupantName} (Override)`,
+        isOverridden: true,
+        explanation: {
+          preferenceRank: null,
+          quotaBucket: 'MANUAL_OVERRIDE',
+          compatibilityScore: 82,
+          rationale: `Manual override [${overrideCategory}]: ${overrideReason}${
+            isEscalated ? ' (Escalated to Chief Warden)' : ''
+          }`,
+        },
+      };
 
-      setRoomsData((prev) => ({
+      setOverridesMap((prev) => ({
         ...prev,
-        [currentKey]: updatedRooms,
+        [bedId]: overrideData,
       }));
 
       setSuccessMsg(
-        `Manual override applied to Bed ${selectedBed.bed.label} in Room ${selectedBed.room.roomNumber}! Invariant I5 logged to SHA-256 audit log.`
+        `Manual override applied to Bed ${selectedBed.bed.label} in Room ${selectedBed.room.displayNumber}! Invariant I5 logged in SHA-256 audit log.`
       );
       setShowOverrideModal(false);
       setSelectedBed(null);
@@ -531,7 +370,7 @@ export default function WardenBedMapPage() {
                 draftStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
               }`}
             >
-              {draftStatus}
+              Draft: {draftStatus}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
@@ -562,211 +401,283 @@ export default function WardenBedMapPage() {
 
       {/* Control Panel: Hostel, Block, Floor Selectors */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-        {/* Hostel Selector Pills */}
+        {/* 1. Hostel Selector Pills */}
         <div>
           <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-            Select Campus Residence:
+            1. Select Campus Residence:
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
             {hostels.map((h) => {
               const isSelected = selectedHostelCode === h.code;
               return (
                 <button
                   key={h.code}
-                  onClick={() => setSelectedHostelCode(h.code)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border ${
+                  onClick={() => {
+                    setSelectedHostelCode(h.code);
+                    setSelectedBed(null);
+                  }}
+                  className={`p-3 rounded-xl text-left border transition ${
                     isSelected
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-400'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  <span>{h.name}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
-                      isSelected ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-200 text-slate-600'
-                    }`}
-                  >
-                    {h.code} &bull; {h.gender}
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg">{h.icon}</span>
+                    <span
+                      className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold ${
+                        isSelected ? 'bg-indigo-800 text-indigo-100' : 'bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {h.code} &bull; {h.gender}
+                    </span>
+                  </div>
+                  <div className="font-bold text-xs mt-1 truncate">{h.name}</div>
+                  <div className={`text-[11px] mt-0.5 ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>
+                    {h.capacity.toLocaleString()} beds
+                  </div>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Block & Floor Controls + Search Row */}
+        {/* 2. Block & Floor Selectors */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
           {/* Block Selector */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Residential Block</label>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              2. Residential Block
+            </label>
             <div className="grid grid-cols-4 gap-1.5">
-              {['Block A', 'Block B', 'Block C', 'Block D'].map((b) => (
-                <button
-                  key={b}
-                  onClick={() => setSelectedBlock(b)}
-                  className={`py-1.5 text-xs font-bold rounded-lg border transition ${
-                    selectedBlock === b
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  {b.replace('Block ', '')}
-                </button>
-              ))}
+              {['Block A', 'Block B', 'Block C', 'Block D'].map((b) => {
+                const isSelected = selectedBlock === b;
+                return (
+                  <button
+                    key={b}
+                    onClick={() => {
+                      setSelectedBlock(b);
+                      setSelectedBed(null);
+                    }}
+                    className={`py-2 text-xs font-bold rounded-xl border transition ${
+                      isSelected
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-slate-700'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {b}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Floor Selector */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Floor Level</label>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              3. Floor Level
+            </label>
             <div className="grid grid-cols-4 gap-1.5">
-              {[0, 1, 2, 3].map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setSelectedFloor(f)}
-                  className={`py-1.5 text-xs font-bold rounded-lg border transition ${
-                    selectedFloor === f
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  {f === 0 ? 'G (♿)' : `Floor ${f}`}
-                </button>
-              ))}
+              {[
+                { f: 0, label: 'Ground ♿' },
+                { f: 1, label: 'Floor 1' },
+                { f: 2, label: 'Floor 2' },
+                { f: 3, label: 'Floor 3' },
+              ].map(({ f, label }) => {
+                const isSelected = selectedFloor === f;
+                return (
+                  <button
+                    key={f}
+                    onClick={() => {
+                      setSelectedFloor(f);
+                      setSelectedBed(null);
+                    }}
+                    className={`py-2 text-xs font-bold rounded-xl border transition ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-400'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Search Box */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Search Room / Student</label>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Search Room / Resident
+            </label>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="e.g. 104, Aditya, 12326241..."
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs"
+              placeholder="e.g. A-104, Aditya, 12326241..."
+              className="w-full p-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
           </div>
         </div>
 
-        {/* Filter Chips & Live Density Counter */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
-          <div className="flex flex-wrap gap-1.5">
-            {[
-              { id: 'ALL', label: 'All Beds' },
-              { id: 'OCCUPIED', label: 'Occupied' },
-              { id: 'AVAILABLE', label: 'Vacant' },
-              { id: 'OVERRIDDEN', label: 'Overridden (★)' },
-              { id: 'ACCESSIBLE', label: 'Accessible (♿)' },
-            ].map((chip) => (
-              <button
-                key={chip.id}
-                onClick={() => setStatusFilter(chip.id as any)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition ${
-                  statusFilter === chip.id
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
+        {/* Filter Chips */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+            Status Filter:
+          </span>
+          {[
+            { id: 'ALL', label: 'All Beds' },
+            { id: 'OCCUPIED', label: 'Occupied' },
+            { id: 'AVAILABLE', label: 'Vacant' },
+            { id: 'OVERRIDDEN', label: 'Overridden (★)' },
+            { id: 'ACCESSIBLE', label: 'Accessible (♿)' },
+          ].map((chip) => (
+            <button
+              key={chip.id}
+              onClick={() => setStatusFilter(chip.id as any)}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition ${
+                statusFilter === chip.id
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          <div className="text-xs text-slate-500 font-medium flex items-center gap-3">
-            <span>
-              Floor Density: <strong className="text-slate-900">{currentOccupiedBeds} / {currentTotalBeds} beds</strong> ({currentOccupancyPct}%)
-            </span>
+      {/* Prominent Active Location Breadcrumb Banner */}
+      <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md animate-in fade-in duration-150">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600/80 flex items-center justify-center text-xl font-bold border border-indigo-400/30">
+            {currentHostel.icon}
           </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-extrabold text-base sm:text-lg tracking-tight">
+                {currentHostel.name} ({currentHostel.code})
+              </span>
+              <span className="text-slate-400">&bull;</span>
+              <span className="text-indigo-300 font-bold">{selectedBlock}</span>
+              <span className="text-slate-400">&bull;</span>
+              <span className="text-emerald-400 font-bold">
+                {selectedFloor === 0 ? 'Ground Floor (Accessible ♿)' : `Floor ${selectedFloor}`}
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Displaying 8 Residential Rooms &bull; {currentTotalBeds} Total Beds ({currentOccupiedBeds} Occupied, {currentTotalBeds - currentOccupiedBeds} Vacant)
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-mono">
+            {currentOccupancyPct}% Occupancy
+          </span>
         </div>
       </div>
 
       {/* Main Bed-Map Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredRooms.map((room) => (
-          <div
-            key={room.id}
-            className={`p-5 bg-white border rounded-2xl shadow-sm space-y-3 transition hover:shadow-md ${
-              room.roomNumber === '104' && selectedHostelCode === 'TB'
-                ? 'ring-2 ring-indigo-500 border-indigo-400'
-                : 'border-slate-200'
-            }`}
-          >
-            {/* Room Header */}
-            <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-slate-900 text-base">
-                  Room {room.roomNumber}
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                  {room.type} ({room.capacity} beds)
-                </span>
-                {room.isAccessible && (
-                  <span className="text-blue-600 text-xs" title="Wheelchair Accessible Room">
-                    ♿
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {filteredRooms.map((room) => {
+          const isAdityaRoom = room.beds.some((b) => b.occupantName?.includes('Aditya Manas'));
+
+          return (
+            <div
+              key={room.id}
+              className={`p-4 bg-white border rounded-2xl shadow-sm space-y-3 transition hover:shadow-md ${
+                isAdityaRoom
+                  ? 'ring-2 ring-indigo-500 border-indigo-400 bg-indigo-50/20'
+                  : 'border-slate-200'
+              }`}
+            >
+              {/* Room Header */}
+              <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-slate-900 text-sm">
+                    Room {room.displayNumber}
                   </span>
-                )}
+                  {room.isAccessible && (
+                    <span className="text-blue-600 text-xs" title="Wheelchair Accessible Ground Floor Unit">
+                      ♿
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                    {room.type} ({room.capacity})
+                  </span>
+                </div>
               </div>
 
-              {room.roomNumber === '104' && selectedHostelCode === 'TB' && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">
-                  Demo User Room
-                </span>
+              {isAdityaRoom && (
+                <div className="px-2 py-1 rounded-lg bg-indigo-100 text-indigo-800 text-[10px] font-bold flex items-center gap-1">
+                  <span>⭐</span>
+                  <span>Aditya Manas&apos;s Allotted Room</span>
+                </div>
               )}
-            </div>
 
-            {/* Beds Grid */}
-            <div className={`grid gap-2 ${room.capacity > 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
-              {room.beds.map((bed) => {
-                const isOccupied = bed.status === 'OCCUPIED';
-                const isAditya = bed.occupantName?.includes('Aditya Manas');
-                const isSelected = selectedBed?.bed.id === bed.id;
+              {/* Beds Grid */}
+              <div className={`grid gap-2 ${room.capacity > 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+                {room.beds.map((bed) => {
+                  const isOccupied = bed.status === 'OCCUPIED';
+                  const isAditya = bed.occupantName?.includes('Aditya Manas');
+                  const isSelected = selectedBed?.bed.id === bed.id;
 
-                return (
-                  <div
-                    key={bed.id}
-                    onClick={() => setSelectedBed({ room, bed })}
-                    className={`p-3 rounded-xl border cursor-pointer transition text-left relative overflow-hidden ${
-                      isSelected
-                        ? 'ring-2 ring-indigo-600 bg-indigo-50 border-indigo-400'
-                        : bed.isOverridden
-                        ? 'bg-amber-50/80 border-amber-300 hover:bg-amber-100'
-                        : isAditya
-                        ? 'bg-blue-50/90 border-blue-300 hover:bg-blue-100'
-                        : isOccupied
-                        ? 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                        : 'bg-emerald-50/70 border-emerald-200 hover:bg-emerald-100'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center text-xs font-bold">
-                      <span className="text-slate-900">Bed {bed.label}</span>
-                      <div className="flex items-center gap-1">
-                        {bed.isAccessible && <span title="Accessible Unit">♿</span>}
-                        {bed.isOverridden && (
-                          <span className="text-amber-700 text-[10px] font-bold">★ Override</span>
-                        )}
-                        {!isOccupied && (
-                          <span className="text-emerald-700 text-[10px] font-bold">Vacant</span>
-                        )}
+                  return (
+                    <div
+                      key={bed.id}
+                      onClick={() => setSelectedBed({ room, bed })}
+                      className={`p-2.5 rounded-xl border cursor-pointer transition text-left relative overflow-hidden ${
+                        isSelected
+                          ? 'ring-2 ring-indigo-600 bg-indigo-50 border-indigo-400'
+                          : bed.isOverridden
+                          ? 'bg-amber-50/90 border-amber-300 hover:bg-amber-100'
+                          : isAditya
+                          ? 'bg-indigo-100/80 border-indigo-300 hover:bg-indigo-200/80'
+                          : isOccupied
+                          ? 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                          : 'bg-emerald-50/70 border-emerald-200 hover:bg-emerald-100'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center text-xs font-bold">
+                        <span className="text-slate-900">Bed {bed.label}</span>
+                        <div className="flex items-center gap-1">
+                          {bed.isAccessible && <span title="Accessible Unit">♿</span>}
+                          {bed.isOverridden && (
+                            <span className="text-amber-700 text-[10px] font-bold">★ Override</span>
+                          )}
+                          {!isOccupied && (
+                            <span className="text-emerald-700 text-[10px] font-bold">Vacant</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="text-xs text-slate-800 font-semibold truncate mt-1">
-                      {bed.occupantName || <span className="text-emerald-700 font-normal">Available</span>}
-                    </div>
-
-                    {bed.occupantRoll && (
-                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                        {bed.occupantRoll}
+                      <div className="text-xs text-slate-800 font-semibold truncate mt-1">
+                        {bed.occupantName || <span className="text-emerald-700 font-normal">Available</span>}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+
+                      {bed.occupantRoll && (
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          {bed.occupantRoll}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {filteredRooms.length === 0 && (
+        <div className="p-12 text-center bg-white border border-slate-200 rounded-2xl text-slate-500 text-sm">
+          No rooms match the selected search query or filter in this block and floor.
+        </div>
+      )}
 
       {/* Selected Bed Inspector & Detail Card */}
       {selectedBed && (
@@ -778,7 +689,7 @@ export default function WardenBedMapPage() {
                   Bed Inspector
                 </span>
                 <span className="text-xs text-slate-400">
-                  Room {selectedBed.room.roomNumber} &bull; Bed {selectedBed.bed.label}
+                  {currentHostel.name} &bull; Room {selectedBed.room.displayNumber} &bull; Bed {selectedBed.bed.label}
                 </span>
               </div>
               <h2 className="text-xl font-bold text-slate-900 mt-1">
@@ -852,7 +763,7 @@ export default function WardenBedMapPage() {
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200">
             <div>
               <h3 className="text-lg font-bold text-slate-900">
-                Manual Override: Room {selectedBed.room.roomNumber}, Bed {selectedBed.bed.label}
+                Manual Override: Room {selectedBed.room.displayNumber}, Bed {selectedBed.bed.label}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 Invariant I5 mandates a categorized justification with minimum 10 characters. All overrides are cryptographically logged in the SHA-256 tamper-evident audit trail.

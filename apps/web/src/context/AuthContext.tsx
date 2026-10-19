@@ -148,11 +148,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const switchRole = (role: Role) => {
     const demo = DEMO_USERS[role];
     if (demo) {
-      setUser(demo);
+      const newUser: UserSession = { ...demo };
+      setUser(newUser);
       const fakeToken = `demo-token-${role.toLowerCase()}`;
       setToken(fakeToken);
-      localStorage.setItem('hostel_user', JSON.stringify(demo));
-      localStorage.setItem('hostel_token', fakeToken);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('hostel_user', JSON.stringify(newUser));
+        localStorage.setItem('hostel_token', fakeToken);
+        window.dispatchEvent(new CustomEvent('hostel_role_switched', { detail: { role } }));
+      }
     }
   };
 
