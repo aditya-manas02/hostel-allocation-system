@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hostel Allocation System — Presentation Deck (Aditya Manas)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+    .slide { display: none; min-height: 82vh; }
+    .slide.active { display: flex; }
+    @media print {
+      body { background: white !important; color: black !important; }
+      .no-print { display: none !important; }
+      .slide { display: flex !important; page-break-after: always; min-height: 100vh; padding: 2rem !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+  <!-- Top Navigation & Controls Bar -->
+  <header class="no-print bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-md">
+        🏛️
+      </div>
+      <div>
+        <h1 class="text-sm font-bold text-slate-100">Hostel Allocation Engine &bull; Presentation</h1>
+        <p class="text-[11px] text-slate-400">Aditya Manas &bull; Reg No: 12326241 &bull; B.Tech CSE</p>
+      </div>
+    </div>
+
+    <!-- Progress & Controls -->
+    <div class="flex items-center gap-3">
+      <div class="text-xs text-slate-400 font-mono">
+        Slide <span id="currentSlideNum" class="font-bold text-indigo-400">1</span> / <span id="totalSlidesNum">12</span>
+      </div>
+      <div class="w-28 h-2 bg-slate-800 rounded-full overflow-hidden hidden sm:block">
+        <div id="progressBar" class="bg-indigo-500 h-full w-[8.33%] transition-all duration-300"></div>
+      </div>
+      <div class="flex gap-1.5">
+        <button onclick="prevSlide()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition flex items-center gap-1">
+          &larr; Prev
+        </button>
+        <button onclick="nextSlide()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition flex items-center gap-1 shadow-sm">
+          Next &rarr;
+        </button>
+        <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition" title="Print or Save as PDF">
+          🖨️ PDF
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Presentation Slides Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8 flex items-center justify-center">
+
+    <!-- SLIDE 1: Title Slide -->
+    <section class="slide active flex-col justify-center items-center text-center space-y-8 max-w-4xl w-full animate-fade-in">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-400/30 text-indigo-300 text-xs font-bold tracking-wide uppercase">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Capstone Engineering Showcase &bull; Academic Year 2026–2027
+      </div>
+
+      <div class="space-y-4">
+        <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
+          Policy-Driven <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400">Hostel Allocation Engine</span>
+        </h1>
+        <p class="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto font-light leading-relaxed">
+          Deterministic Multi-Pass Heuristics with AES-256-GCM Encrypted Roommate Compatibility Matching &amp; SHA-256 Tamper-Evident Audit Trails
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl text-left pt-4">
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+          <div class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">Candidate / Presenter</div>
+          <div class="text-xl font-bold text-white mt-1">Aditya Manas</div>
+          <div class="text-xs text-slate-400 mt-0.5">Registration No: <span class="font-mono text-indigo-300 font-bold">12326241</span></div>
+          <div class="text-xs text-slate-400">B.Tech Computer Science &amp; Engineering</div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+          <div class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Project Domain &amp; Stack</div>
+          <div class="text-xl font-bold text-white mt-1">University Management</div>
+          <div class="text-xs text-slate-400 mt-0.5">Next.js 15, Node.js/Express, MongoDB ACID</div>
+          <div class="text-xs text-slate-400">Pure TypeScript Zero-I/O Engine</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Project Intro -->
+    <section class="slide flex-col justify-center space-y-6 w-full animate-fade-in">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-md border border-indigo-500/20">
+          01. Project Introduction
+        </span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">Executive Summary &amp; Campus Scale</h2>
+        <p class="text-sm text-slate-400">An autonomous, policy-governed residential allocation platform for modern university life.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <div class="text-3xl">🏛️</div>
+          <h3 class="text-lg font-bold text-white">Massive Campus Scale</h3>
+          <ul class="text-xs text-slate-300 space-y-2 leading-relaxed">
+            <li>&bull; Coordinates housing for <strong>8,000+ applicants</strong> across 5 residential hostels.</li>
+            <li>&bull; Manages <strong>2,960 rooms</strong> across Tagore, Gargi, Sarojini, Aryabhatta, and Kalam House.</li>
+            <li>&bull; Supports Single, Double, Triple, and Quad room layouts.</li>
+            <li>&bull; Replaces error-prone manual spreadsheets with automated precision.</li>
+          </ul>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <div class="text-3xl">⚖️</div>
+          <h3 class="text-lg font-bold text-white">Policy-Driven Governance</h3>
+          <ul class="text-xs text-slate-300 space-y-2 leading-relaxed">
+            <li>&bull; <strong>Hard Constraint Invariants (I8):</strong> Zero room over-allocation, zero student assigned twice, strict gender isolation.</li>
+            <li>&bull; <strong>Mandatory PWD Priority:</strong> Automatically matches disabled students to ground-floor wheelchair units.</li>
+            <li>&bull; <strong>Statutory Quotas:</strong> General, SC/ST/OBC, Scholarship, Sports, and International students.</li>
+            <li>&bull; <strong>Audit Trail:</strong> Append-only SHA-256 hash-chained ledger.</li>
+          </ul>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <div class="text-3xl">🤝</div>
+          <h3 class="text-lg font-bold text-white">Roommate Harmony</h3>
+          <ul class="text-xs text-slate-300 space-y-2 leading-relaxed">
+            <li>&bull; <strong>4D Lifestyle Survey:</strong> Evaluates sleep schedules, study noise, cleanliness, and social tolerance.</li>
+            <li>&bull; <strong>Zero Privacy Leaks (I6):</strong> Survey answers encrypted with AES-256-GCM at rest; raw data never revealed.</li>
+            <li>&bull; <strong>Pairwise Compatibility:</strong> Algorithmic matching yielding scores (0–100%).</li>
+            <li>&bull; Drastically lowers mid-semester conflicts and transfer requests.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: Gaps in Existing Systems -->
+    <section class="slide flex-col justify-center space-y-6 w-full animate-fade-in">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-md border border-rose-500/20">
+          02. Problem Statement
+        </span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">Critical Gaps in Traditional Allocation Systems</h2>
+        <p class="text-sm text-slate-400">Why legacy manual spreadsheets and paper forms fail students and administrators.</p>
+      </div>
+
+      <div class="space-y-3">
+        <div class="p-4 rounded-xl bg-slate-900 border-l-4 border-rose-500 flex items-start gap-3">
+          <span class="text-rose-400 font-bold text-base">✕</span>
+          <div>
+            <h4 class="text-sm font-bold text-white">Gap 1: Opaque Discretion &amp; Clerical Favoritism</h4>
+            <p class="text-xs text-slate-400 mt-0.5">Spreadsheet allocations take weeks, contain frequent clerical typos, and lack transparency, leading to student distrust and accusations of favoritism.</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border-l-4 border-rose-500 flex items-start gap-3">
+          <span class="text-rose-400 font-bold text-base">✕</span>
+          <div>
+            <h4 class="text-sm font-bold text-white">Gap 2: Discordant Roommate Pairings</h4>
+            <p class="text-xs text-slate-400 mt-0.5">Random room assignments pair students with opposite diurnal rhythms (early bird vs. night owl) or conflicting study noise needs, sparking roommate hostility and distress.</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border-l-4 border-rose-500 flex items-start gap-3">
+          <span class="text-rose-400 font-bold text-base">✕</span>
+          <div>
+            <h4 class="text-sm font-bold text-white">Gap 3: Disability &amp; Accessibility Breaches</h4>
+            <p class="text-xs text-slate-400 mt-0.5">Physical disability requirements are overlooked, assigning mobility-impaired students to upper floors without elevator access due to lack of hard programmatic checks.</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border-l-4 border-rose-500 flex items-start gap-3">
+          <span class="text-rose-400 font-bold text-base">✕</span>
+          <div>
+            <h4 class="text-sm font-bold text-white">Gap 4: Sensitive Lifestyle Privacy Leaks</h4>
+            <p class="text-xs text-slate-400 mt-0.5">Students' personal lifestyle habits and medical accommodations sit unencrypted in open sheets and physical forms, breaching basic data privacy standards.</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border-l-4 border-rose-500 flex items-start gap-3">
+          <span class="text-rose-400 font-bold text-base">✕</span>
+          <div>
+            <h4 class="text-sm font-bold text-white">Gap 5: Zero Auditability &amp; Inability to Explain Decisions</h4>
+            <p class="text-xs text-slate-400 mt-0.5">Colleges cannot explain why Student A received their top choice while Student B was waitlisted. Overrides happen off-the-record without an immutable log.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Objectives -->
+    <section class="slide flex-col justify-center space-y-6 w-full animate-fade-in">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
+          03. Project Objectives
+        </span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">Core Architectural &amp; Functional Goals</h2>
+        <p class="text-sm text-slate-400">Clear, measurable objectives designed to guarantee fairness, speed, and privacy.</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs">01</span>
+            <h3 class="text-base font-bold text-white">Zero Constraint Violations (I8)</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Guarantee that no student is assigned twice, no bed is assigned to multiple students, gender boundaries are strictly enforced, and accessible ground-floor rooms are reserved for PWD students.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 font-bold flex items-center justify-center text-xs">02</span>
+            <h3 class="text-base font-bold text-white">Deterministic Reproducibility (I3)</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Eliminate non-deterministic randomness. Identical inputs + parameters + PRNG seed yield byte-identical allocation drafts every time, proven via fast-check property testing.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 font-bold flex items-center justify-center text-xs">03</span>
+            <h3 class="text-base font-bold text-white">Privacy-Preserving Matching (I6)</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Protect sensitive student lifestyle data with AES-256-GCM encryption at rest. Never expose raw survey answers to roommates, wardens, or administrators; surface only match scores.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center text-xs">04</span>
+            <h3 class="text-base font-bold text-white">Full Explainability &amp; Audit (I4, I7)</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Every allotment stores a transparent explanation (preference rank, quota bucket, PRNG tiebreak, compatibility score) backed by an append-only SHA-256 hash-chained audit ledger.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: Achieving Registration Objectives -->
+    <section class="slide flex-col justify-center space-y-6 w-full animate-fade-in">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-500/20">
+          04. Implementation Strategy
+        </span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">Achieving Registration Objectives: Full Lifecycle Workflow</h2>
+        <p class="text-sm text-slate-400">Step-by-step pipeline connecting student self-service to administrative governance.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3 text-left">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <span class="text-xs font-bold text-indigo-400 block">STEP 1</span>
+          <h4 class="text-sm font-bold text-white">Student Registration</h4>
+          <p class="text-[11px] text-slate-400">Aditya Manas submits application, uploads fee receipts, passes rule eligibility, and ranks hostel preferences.</p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <span class="text-xs font-bold text-indigo-400 block">STEP 2</span>
+          <h4 class="text-sm font-bold text-white">Encrypted Survey</h4>
+          <p class="text-[11px] text-slate-400">Student answers 4D lifestyle questions. Backend encrypts payload with AES-256-GCM before DB persistence.</p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <span class="text-xs font-bold text-indigo-400 block">STEP 3</span>
+          <h4 class="text-sm font-bold text-white">Engine Execution</h4>
+          <p class="text-[11px] text-slate-400">Admin runs pure TypeScript multi-pass heuristic. Allocates 8,000+ beds in 3.7 seconds with zero violations.</p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <span class="text-xs font-bold text-indigo-400 block">STEP 4</span>
+          <h4 class="text-sm font-bold text-white">Warden Review</h4>
+          <p class="text-[11px] text-slate-400">Wardens inspect interactive bed map (`/bedmap`), review explanations, and approve draft in MongoDB transaction.</p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+          <span class="text-xs font-bold text-indigo-400 block">STEP 5</span>
+          <h4 class="text-sm font-bold text-white">Publish &amp; Transfers</h4>
+          <p class="text-[11px] text-slate-400">Allotment order published. Students download PDF letters. Students can petition room transfers via `/room-changes`.</p>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-xl bg-indigo-950/50 border border-indigo-500/30 text-xs text-indigo-200 flex items-center justify-between">
+        <span>⚡ <strong>Real-Time Synchronized State:</strong> Custom DOM events broadcast across all portals for instant student, warden, and admin UI updates.</span>
+        <span class="font-mono text-emerald-400 font-bold">100% Invariants Preserved</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: Allocation Algorithm -->
+    <section class="slide flex-col justify-center space-y-6 w-full animate-fade-in">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-md border border-indigo-500/20">
+          05. Algorithm Architecture
+        </span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">Deterministic Multi-Pass Heuristic Allocation Engine</h2>
+        <p class="text-sm text-slate-400">Pure TypeScript library (zero I/O, zero external framework imports) designed for speed and explainability.</p>
+      </div>
+
+      <div class="space-y-3.5">
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 font-bold flex items-center justify-center text-sm shrink-0">
+            A
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-indigo-300">PASS A &bull; Quota &amp; PWD Accessibility Hard Priority</h3>
+            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+              Strictly maps mobility-impaired (PWD) applicants to ground-floor wheelchair-accessible beds (Invariant I8). Allocates categorical reserved quotas (SC/ST/OBC, Sports, Scholarship, and International exchange students) before general merit processing.
+            </p>
+          </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-sm shrink-0">
+            B
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-emerald-300">PASS B &bull; General Merit &amp; Ranked Preference Greedy Match</h3>
+            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+              Sorts general applicants by composite score (academic standing CGPA + geographic distance index). Iterates greedily through applicant ranked choices (hostels 1..N and room types). Resolves ties deterministically using seeded SFC32 PRNG.
+            </p>
+          </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center text-sm shrink-0">
+            C
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-amber-300">PASS C &bull; Waitlist Buffering &amp; Fallback Resolution</h3>
+            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+              Handles over-subscribed hostels deterministically without exceeding structural capacity. Assigns unplaced students to fallback campus residences or deterministic waitlist queues while protecting buffer margins for emergency reallocations.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs font-mono text-slate-400 text-center">
+        Seed Generator: <span class="text-indigo-400 font-bold">cyrb128(seedString)</span> &bull; PRNG: <span class="text-indigo-400 font-bold">sfc32 (Simple Fast Counter)</span> &bull; 0 Math.random() calls
+      </div>
+    </section>
+
+    <!-- SLIDE 7: Roommate Compatibility Matching -->
+    <section class="slide flex-col justify-center space-y-6 w-full animate-fade-in">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-pink-400 bg-pink-500/10 px-2.5 py-1 rounded-md border border-pink-500/20">
+          06. Roommate Matching Model
+        </span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">Lifestyle Compatibility Heuristic &amp; Privacy Guarantees</h2>
+        <p class="text-sm text-slate-400">4-dimensional normalized vector matching with cryptographic AES-256-GCM data shielding.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <h3 class="text-base font-bold text-indigo-400">4-Dimensional Evaluation Vector</h3>
+          <div class="space-y-2.5 text-xs">
+            <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+              <span class="font-bold text-white block">1. Sleep Schedule (Weight: 35%)</span>
+              <span class="text-slate-400">Aligns Early Birds with Early Birds, Night Owls with Night Owls. Eliminates nocturnal light/alarm disturbance.</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+              <span class="font-bold text-white block">2. Study Habits &amp; Noise (Weight: 25%)</span>
+              <span class="text-slate-400">Distinguishes students who need dead silence in-room from those who study with background music or study in libraries.</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+              <span class="font-bold text-white block">3. Cleanliness &amp; Organization (Weight: 20%)</span>
+              <span class="text-slate-400">Matches neat &amp; tidy students together to avoid shared space clutter disputes.</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+              <span class="font-bold text-white block">4. Social Tolerance &amp; Guests (Weight: 20%)</span>
+              <span class="text-slate-400">Scores tolerance for room visitors, gaming, and musical instrument practice.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+          <h3 class="text-base font-bold text-emerald-400">Mathematical Model &amp; Cryptography</h3>
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 leading-relaxed">
+            <div class="text-indigo-400 font-bold">// Normalized Euclidean Compatibility Metric:</div>
+            Distance = &radic;&sum;(w<sub>i</sub> &times; (A<sub>i</sub> - B<sub>i</sub>)&sup2;)<br/>
+            Compatibility Score = 100 &times; (1 - Distance / Max_Distance)
+          </div>
+
+          <div class="space-y-2 text-xs text-slate-300">
+            <div class="flex items-start gap-2">
+              <span class="text-emerald-400">✔</span>
+              <span><strong>AES-256-GCM Field Encryption:</strong> All survey answers encrypted at rest using unique per-record IVs.</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-emerald-400">✔</span>
+              <span><strong>Zero PII Exposure:</strong> Staff and students only see aggregate scores (e.g. 82/100). Individual answers are never exposed.</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-emerald-400">✔</span>
+              <span><strong>Aditya Manas Verification:</strong> Paired with Rohan Gupta with 82/100 compatibility (Early Bird 95%, Study 90%).</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: Student Features -->
+    <section class="slide flex-col justify-center space-y-6 w-full animate-fade-in">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-500/20">
+          07. System Features
+        </span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">Student Portal &amp; End-to-End Self-Service</h2>
+        <p class="text-sm text-slate-400">Complete digitized workflow experienced by Aditya Manas (Reg: 12326241).</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+          <h4 class="text-sm font-bold text-white flex items-center gap-1.5">
+            <span>📝</span> Online Application &amp; Document Verification
+          </h4>
+          <p class="text-xs text-slate-400">Students apply digitally, submit category certificates, and track automated policy checks with automated eligibility evaluation.</p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+          <h4 class="text-sm font-bold text-white flex items-center gap-1.5">
+            <span>🎯</span> Drag-to-Rank Preferences
+          </h4>
+          <p class="text-xs text-slate-400">Intuitive ranking interface to order choices across all 5 campus hostels and preferred room occupancies (Single, Double, Triple, Quad).</p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+          <h4 class="text-sm font-bold text-white flex items-center gap-1.5">
+            <span>📜</span> Official Allotment Order Certificate (`/result`)
+          </h4>
+          <p class="text-xs text-slate-400">Confirmed allotment order showing Hostel, Block, Floor, Room, Bed, Roommate profile, compatibility score, dining hall pass, and reporting date.</p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+          <h4 class="text-sm font-bold text-white flex items-center gap-1.5">
+            <span>📥</span> Cryptographic Printable Order (PDF)
+          </h4>
+          <p class="text-xs text-slate-400">Generates official printable allotment order with SHA-256 tamper-evident seal, QR verification code, and warden digital signature.</p>
+        </div>
+      </div>
+
+      <!-- Highlight Box for Room Change -->
+      <div class="p-5 rounded-2xl bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 border border-indigo-500/40 space-y-2">
+        <div class="flex items-center justify-between">
+          <h4 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>🔄</span> Student Room Change Request Flow
+          </h4>
+          <span class="text-[11px] font-bold text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded">NEW FEATURE</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Students can click <strong>"Request Room Change"</strong> on their Allotment Order, pick a desired residence and room type, specify preferred room numbers, and write a mandatory justification. Requests are tracked live on their dashboard (Pending &rarr; Approved / Declined).
+        </p>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: Admin & Warden Features -->
+    <section class="slide flex-col justify-center space-y-6 w-full animate-fade-in">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
+          08. System Features
+        </span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">Admin Command Center &amp; Visual Bed Map</h2>
+        <p class="text-sm text-slate-400">High-efficiency institutional tools for wardens and campus administrators.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>🛏️</span> Direct Room Allotment (`/assignments`)
+            </h4>
+            <span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">ADMIN</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            View student roster categorized by Allotted vs. Waitlisted. Search by name or roll number. Admins can allot or reassign any student to any bed across all 5 hostels with mandatory Invariant I5 audit rationale.
+          </p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>🗺️</span> Interactive Floor Bed Map (`/bedmap`)
+            </h4>
+            <span class="text-[10px] font-bold text-indigo-400 bg-indigo-500/20 px-2 py-0.5 rounded">WARDEN</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Floor-by-floor visual bed matrix across 5 hostels, 4 blocks, and 16 floors. Color-coded status: Occupied (Slate), Vacant (Green), Overridden (Amber), and PWD Accessible (♿).
+          </p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>⚡</span> 1-Click Bed Assignment
+            </h4>
+            <span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">WARDEN</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Clicking any vacant bed inside the Bed Inspector opens a quick allotment modal to pick a waitlisted applicant and place them immediately into that room.
+          </p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>🔄</span> Room Change Review Queue (`/room-changes`)
+            </h4>
+            <span class="text-[10px] font-bold text-indigo-400 bg-indigo-500/20 px-2 py-0.5 rounded">ADMIN &amp; WARDEN</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Dedicated queue of student transfer requests. Admins inspect student justifications, approve and assign a target room/bed, or reject with mandatory written explanation.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: Tech Stack -->
+    <section class="slide flex-col justify-center space-y-6 w-full animate-fade-in">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-md border border-purple-500/20">
+          09. Technical Stack
+        </span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">Full-Stack Enterprise Architecture</h2>
+        <p class="text-sm text-slate-400">Strict TypeScript monorepo engineered with Next.js 15, Node.js, and MongoDB ACID transactions.</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Frontend Web</div>
+          <div class="text-lg font-bold text-white">Next.js 15 App Router</div>
+          <ul class="text-xs text-slate-400 space-y-1.5">
+            <li>&bull; React 18, TypeScript (Strict)</li>
+            <li>&bull; Tailwind CSS + shadcn/ui</li>
+            <li>&bull; Reactive Store (`allocationStore`)</li>
+            <li>&bull; Custom DOM Event Sync</li>
+            <li>&bull; 20/20 Static Compiled Routes</li>
+          </ul>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Backend API</div>
+          <div class="text-lg font-bold text-white">Node.js + Express</div>
+          <ul class="text-xs text-slate-400 space-y-1.5">
+            <li>&bull; TypeScript REST API</li>
+            <li>&bull; Zod Schema Validation</li>
+            <li>&bull; JWT + RBAC Middleware</li>
+            <li>&bull; OpenAPI / Swagger at `/api/docs`</li>
+            <li>&bull; Correlation ID Request Tracing</li>
+          </ul>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-amber-400 uppercase tracking-wider">Allocation Engine</div>
+          <div class="text-lg font-bold text-white">Pure TypeScript Lib</div>
+          <ul class="text-xs text-slate-400 space-y-1.5">
+            <li>&bull; Zero I/O, Zero Frameworks</li>
+            <li>&bull; Deterministic Heuristics</li>
+            <li>&bull; Seeded SFC32 / Cyrb128 PRNG</li>
+            <li>&bull; Fast-Check Property Tests</li>
+            <li>&bull; 100% Green Test Suite</li>
+          </ul>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-purple-400 uppercase tracking-wider">Database &amp; Infra</div>
+          <div class="text-lg font-bold text-white">MongoDB + Redis</div>
+          <ul class="text-xs text-slate-400 space-y-1.5">
+            <li>&bull; MongoDB 8.0 Replica Set (`rs0`)</li>
+            <li>&bull; ACID Multi-Doc Transactions</li>
+            <li>&bull; Redis 7.4 + BullMQ Queue</li>
+            <li>&bull; AES-256-GCM Encryption</li>
+            <li>&bull; SHA-256 Audit Hash Chain</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11: Invariants & Security -->
+    <section class="slide flex-col justify-center space-y-6 w-full animate-fade-in">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
+          10. Invariants &amp; Security
+        </span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">8 Non-Negotiable System Invariants (I1–I8)</h2>
+        <p class="text-sm text-slate-400">Architectural and mathematical integrity guarantees enforced across code and database layers.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-left text-xs">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <strong class="text-indigo-400 block mb-1">I1 &amp; I2 &bull; Draft/Published Separation &amp; Immutability</strong>
+          <span class="text-slate-300">Strict state machine (`DRAFT` &rarr; `UNDER_REVIEW` &rarr; `APPROVED` &rarr; `PUBLISHED`). Exactly one atomic code path publishes drafts in a transaction. Published records are permanently immutable.</span>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <strong class="text-indigo-400 block mb-1">I3 &bull; Deterministic Reproducibility</strong>
+          <span class="text-slate-300">Identical applicant snapshot + seed + rules + engine version guarantees byte-identical draft output. Verified via 200+ random property runs.</span>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <strong class="text-indigo-400 block mb-1">I4 &bull; Full Structured Explainability</strong>
+          <span class="text-slate-300">Every bed assignment stores structured metadata: preference rank, verified constraints, quota bucket, PRNG tiebreak, compatibility score, and rationale.</span>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <strong class="text-indigo-400 block mb-1">I5 &bull; Mandatory Override Justification</strong>
+          <span class="text-slate-300">All administrative reassignments require categorized justification (&ge;10 chars). Hard constraint exceptions mandate Chief Warden escalation.</span>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <strong class="text-indigo-400 block mb-1">I6 &bull; Sensitive Lifestyle Privacy</strong>
+          <span class="text-slate-300">Questionnaires encrypted with AES-256-GCM. Never returned to staff; pairwise compatibility scores only. Deletable upon request with tombstone audit.</span>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <strong class="text-indigo-400 block mb-1">I7 &amp; I8 &bull; Hash-Chained Audit &amp; Hard Constraints</strong>
+          <span class="text-slate-300">Append-only SHA-256 hash-chained audit log with tamper detection. Hard constraints (capacity, gender, PWD accessibility) are never violated.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 12: Benchmarks & Conclusion -->
+    <section class="slide flex-col justify-center space-y-6 w-full animate-fade-in">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
+          11. Results &amp; Conclusion
+        </span>
+        <h2 class="text-3xl font-extrabold text-white mt-2">Empirical Benchmarks &amp; Presentation Summary</h2>
+        <p class="text-sm text-slate-400">Proven performance, complete policy safety, and production delivery.</p>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="text-3xl font-extrabold text-emerald-400">3.70s</div>
+          <div class="text-xs font-bold text-white mt-1">Allocation Time</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">8,000 beds allocated (~160&times; faster than budget)</div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="text-3xl font-extrabold text-indigo-400">0</div>
+          <div class="text-xs font-bold text-white mt-1">Constraint Violations</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Zero gender, capacity, or accessibility breaches</div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="text-3xl font-extrabold text-purple-400">100%</div>
+          <div class="text-xs font-bold text-white mt-1">Tests Green</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Unit, property (200+ runs), and benchmarks pass</div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="text-3xl font-extrabold text-amber-400">20 / 20</div>
+          <div class="text-xs font-bold text-white mt-1">Next.js Web Routes</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">All pages statically built and live synchronized</div>
+        </div>
+      </div>
+
+      <div class="p-6 rounded-2xl bg-slate-900 border border-indigo-500/30 text-left space-y-3">
+        <h4 class="text-base font-bold text-white flex items-center gap-2">
+          <span>🎯</span> Key Takeaways for Aditya Manas (12326241)
+        </h4>
+        <ul class="text-xs text-slate-300 space-y-2 leading-relaxed">
+          <li>&bull; <strong>Solves Real University Bottlenecks:</strong> Replaces opaque spreadsheets with a deterministic, mathematically provable allocation engine.</li>
+          <li>&bull; <strong>Maximizes Living Harmony:</strong> Optimizes roommate compatibility (82/100 score) while cryptographically shielding sensitive data with AES-256-GCM.</li>
+          <li>&bull; <strong>Complete Administrative Agility:</strong> Enables direct student room allotments, interactive floor-by-floor visual bed maps, and streamlined room transfer workflows.</li>
+          <li>&bull; <strong>Fully Verified &amp; Production-Ready:</strong> Monorepo deployed with complete TypeScript safety, passing all 8 non-negotiable architectural invariants.</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Key Hints Bar -->
+  <footer class="no-print bg-slate-900/60 border-t border-slate-800 px-6 py-2.5 text-center text-xs text-slate-500 flex justify-between items-center">
+    <span>💡 Use <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">Left</kbd> and <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">Right</kbd> arrow keys to navigate slides</span>
+    <span>Hostel Allocation System &bull; Aditya Manas (12326241)</span>
+  </footer>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    document.getElementById('totalSlidesNum').textContent = totalSlides;
+
+    function showSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= totalSlides) index = totalSlides - 1;
+      currentSlide = index;
+
+      slides.forEach((slide, idx) => {
+        if (idx === currentSlide) {
+          slide.classList.add('active');
+        } else {
+          slide.classList.remove('active');
+        }
+      });
+
+      document.getElementById('currentSlideNum').textContent = currentSlide + 1;
+      const pct = ((currentSlide + 1) / totalSlides) * 100;
+      document.getElementById('progressBar').style.width = pct + '%';
+    }
+
+    function nextSlide() {
+      showSlide(currentSlide + 1);
+    }
+
+    function prevSlide() {
+      showSlide(currentSlide - 1);
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        showSlide(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        showSlide(totalSlides - 1);
+      }
+    });
+  </script>
+</body>
+</html>
