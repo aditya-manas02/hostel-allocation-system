@@ -4,18 +4,38 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { fetchCampusOccupancy, OccupancyResponse } from '../lib/api';
+import {
+  StudentAllocation,
+  RoomChangeRequest,
+  getStudentAllocation,
+  getRoomChangeRequests,
+} from '../lib/allocationStore';
 
 export default function HomePage() {
   const { user, isAuthenticated, switchRole } = useAuth();
   const [occupancyData, setOccupancyData] = useState<OccupancyResponse | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [studentAlloc, setStudentAlloc] = useState<StudentAllocation>(getStudentAllocation());
+  const [roomChangeReqs, setRoomChangeReqs] = useState<RoomChangeRequest[]>([]);
 
   const [, setTick] = useState(0);
 
+  const loadLocalStores = () => {
+    setStudentAlloc(getStudentAllocation());
+    setRoomChangeReqs(getRoomChangeRequests());
+  };
+
   useEffect(() => {
+    loadLocalStores();
+
     // Force immediate re-render when role changes
-    const handler = () => setTick((t) => t + 1);
+    const handler = () => {
+      setTick((t) => t + 1);
+      loadLocalStores();
+    };
     window.addEventListener('hostel_role_switched', handler);
+    window.addEventListener('hostel_allocation_updated', handler);
+    window.addEventListener('hostel_room_change_updated', handler);
 
     // Attempt to fetch live campus occupancy stats from Cloud API
     setIsLoadingStats(true);
@@ -26,7 +46,11 @@ export default function HomePage() {
       })
       .finally(() => setIsLoadingStats(false));
 
-    return () => window.removeEventListener('hostel_role_switched', handler);
+    return () => {
+      window.removeEventListener('hostel_role_switched', handler);
+      window.removeEventListener('hostel_allocation_updated', handler);
+      window.removeEventListener('hostel_room_change_updated', handler);
+    };
   }, []);
 
   // Total bed counts with live API fallback
@@ -240,25 +264,64 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Room Change Request Status Alert */}
+        {roomChangeReqs.some((r) => r.studentRoll === '12326241' || r.studentId === 'student-001') && (() => {
+          const myReq = roomChangeReqs.find((r) => r.studentRoll === '12326241' || r.studentId === 'student-001');
+          if (!myReq) return null;
+          return (
+            <div
+              className={`p-4 rounded-xl border text-xs sm:text-sm flex items-center justify-between gap-3 shadow-sm ${
+                myReq.status === 'APPROVED'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  : myReq.status === 'REJECTED'
+                  ? 'bg-rose-50 border-rose-200 text-rose-900'
+                  : 'bg-amber-50 border-amber-200 text-amber-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">
+                  {myReq.status === 'APPROVED' ? '✓' : myReq.status === 'REJECTED' ? '✕' : '⏳'}
+                </span>
+                <div>
+                  <strong>Room Change Request ({myReq.id}): {myReq.status}</strong>
+                  <p className="text-xs opacity-90 mt-0.5">
+                    {myReq.status === 'APPROVED'
+                      ? `Reallocated by ${myReq.decidedBy}: Bed ${studentAlloc.bedLabel} in Room ${studentAlloc.roomNumber} (${studentAlloc.hostelName}).`
+                      : myReq.status === 'REJECTED'
+                      ? `Declined: ${myReq.decisionNotes || 'Cannot be fulfilled due to capacity or policy.'}`
+                      : `Awaiting review for requested transfer to ${myReq.requestedHostelName} (${myReq.requestedRoomType}).`}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/result"
+                className="px-3 py-1.5 rounded-lg bg-white/80 hover:bg-white text-xs font-bold shrink-0 border border-current shadow-xs"
+              >
+                Track Request &rarr;
+              </Link>
+            </div>
+          );
+        })()}
+
         {/* Primary Allotment Order Showcase Card */}
         <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-blue-950 text-white rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
           <div className="relative z-10 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
               <div>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-2">
-                  OFFICIAL ALLOTMENT CONFIRMED &bull; PASS A (RANK #1)
+                  OFFICIAL ALLOTMENT CONFIRMED &bull; ACTIVE
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                  Tagore Bhawan &bull; Room 104, Bed A
+                  {studentAlloc.hostelName} &bull; Room {studentAlloc.roomNumber}, Bed {studentAlloc.bedLabel}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-300 mt-1">
-                  Block A, Floor 1 &bull; Double Occupancy Room &bull; Academic Year 2026–2027
+                  {studentAlloc.blockName}, {studentAlloc.floorName} &bull; {studentAlloc.roomType} Occupancy Room &bull; Academic Year 2026–2027
                 </p>
               </div>
 
               <div className="sm:text-right">
                 <div className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Reporting Date</div>
-                <div className="text-xl font-bold text-emerald-400">October 15, 2026</div>
+                <div className="text-xl font-bold text-emerald-400">{studentAlloc.reportingDate}</div>
                 <div className="text-xs text-slate-300 mt-0.5">Warden Office, Ground Floor</div>
               </div>
             </div>
@@ -267,28 +330,49 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                 <div className="text-xs text-slate-400 font-medium">Roommate Details (Invariant I6)</div>
-                <div className="text-lg font-bold text-white mt-1 flex items-center gap-2">
-                  <span>Rohan Gupta</span>
-                  <span className="text-xs text-indigo-300 font-mono font-normal">(Roll: 2023CS042)</span>
-                </div>
-                <div className="text-xs text-slate-300 mt-1">
-                  B.Tech Computer Science &bull; 2nd Year &bull; General Quota
-                </div>
+                {studentAlloc.roommate ? (
+                  <>
+                    <div className="text-lg font-bold text-white mt-1 flex items-center gap-2">
+                      <span>{studentAlloc.roommate.fullName}</span>
+                      <span className="text-xs text-indigo-300 font-mono font-normal">(Roll: {studentAlloc.roommate.rollNumber})</span>
+                    </div>
+                    <div className="text-xs text-slate-300 mt-1">
+                      {studentAlloc.roommate.programme}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-sm font-semibold text-slate-300 mt-2">
+                    Single Occupancy Unit (No Roommate Assigned)
+                  </div>
+                )}
               </div>
 
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-medium">Roommate Compatibility Score</span>
-                  <span className="text-lg font-extrabold text-emerald-400">82 / 100</span>
-                </div>
-                <div className="w-full bg-white/10 rounded-full h-2 mt-2 overflow-hidden">
-                  <div className="bg-gradient-to-r from-blue-400 to-emerald-400 h-2 rounded-full" style={{ width: '82%' }} />
-                </div>
-                <div className="flex flex-wrap gap-2 mt-3 text-[11px]">
-                  <span className="px-2 py-0.5 rounded bg-white/10 text-slate-200">Early Bird: 95%</span>
-                  <span className="px-2 py-0.5 rounded bg-white/10 text-slate-200">Study Noise: 90%</span>
-                  <span className="px-2 py-0.5 rounded bg-white/10 text-slate-200">Cleanliness: 85%</span>
-                </div>
+                {studentAlloc.roommate ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-400 font-medium">Roommate Compatibility Score</span>
+                      <span className="text-lg font-extrabold text-emerald-400">{studentAlloc.roommate.compatibilityScore} / 100</span>
+                    </div>
+                    <div className="w-full bg-white/10 rounded-full h-2 mt-2 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-blue-400 to-emerald-400 h-2 rounded-full"
+                        style={{ width: `${studentAlloc.roommate.compatibilityScore}%` }}
+                      />
+                    </div>
+                    {studentAlloc.roommate.lifestyleMatch && (
+                      <div className="flex flex-wrap gap-2 mt-3 text-[11px]">
+                        <span className="px-2 py-0.5 rounded bg-white/10 text-slate-200">Sleep: {studentAlloc.roommate.lifestyleMatch.sleepSchedule}</span>
+                        <span className="px-2 py-0.5 rounded bg-white/10 text-slate-200">Study: {studentAlloc.roommate.lifestyleMatch.studyHabits}</span>
+                        <span className="px-2 py-0.5 rounded bg-white/10 text-slate-200">Clean: {studentAlloc.roommate.lifestyleMatch.cleanliness}</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-xs text-slate-300 mt-2">
+                    Single occupancy configuration provides zero noise disturbance and quiet study environment.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -296,8 +380,7 @@ export default function HomePage() {
             <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-xs space-y-1">
               <div className="font-bold text-slate-300">Deterministic Allocation Rationale (Invariant I4):</div>
               <p className="text-slate-300 leading-relaxed">
-                Applicant&apos;s 1st choice preference for Tagore Bhawan (TB) was matched under General Quota in Pass A.
-                Roommate pairing optimized via seeded SFC32 PRNG with pairwise lifestyle compatibility score of 82/100.
+                {studentAlloc.rationale}
               </p>
             </div>
 
@@ -412,6 +495,13 @@ export default function HomePage() {
 
           <div className="flex gap-2">
             <Link
+              href="/room-changes"
+              className="px-4 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold shadow-sm transition inline-flex items-center gap-1.5"
+            >
+              <span>🔄</span>
+              <span>Room Requests ({roomChangeReqs.filter((r) => r.status === 'PENDING').length})</span>
+            </Link>
+            <Link
               href="/bedmap"
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition inline-flex items-center gap-2"
             >
@@ -438,11 +528,16 @@ export default function HomePage() {
             <div className="mt-2 text-3xl font-extrabold text-blue-600">45</div>
             <p className="text-xs text-slate-500 mt-1">PWD ground floor verified</p>
           </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pending Overrides</span>
-            <div className="mt-2 text-3xl font-extrabold text-amber-600">2</div>
-            <p className="text-xs text-slate-500 mt-1">Invariant I5 reasoned edits</p>
-          </div>
+          <Link
+            href="/room-changes"
+            className="bg-white p-5 rounded-2xl border border-amber-200 hover:border-amber-400 shadow-sm transition group"
+          >
+            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Pending Room Requests</span>
+            <div className="mt-2 text-3xl font-extrabold text-amber-600 group-hover:scale-105 transition">
+              {roomChangeReqs.filter((r) => r.status === 'PENDING').length}
+            </div>
+            <p className="text-xs text-amber-700 mt-1">Review student transfer requests &rarr;</p>
+          </Link>
         </div>
 
         {/* Feature Hero Card */}
@@ -591,62 +686,92 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/assignments"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition inline-flex items-center gap-1.5"
+            >
+              <span>🛏️</span>
+              <span>Direct Allotment</span>
+            </Link>
+            <Link
+              href="/room-changes"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition inline-flex items-center gap-1.5"
+            >
+              <span>🔄</span>
+              <span>Room Requests ({roomChangeReqs.filter((r) => r.status === 'PENDING').length})</span>
+            </Link>
             <Link
               href="/inventory"
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition inline-flex items-center gap-1.5"
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-sm transition inline-flex items-center gap-1.5"
             >
               <span>📁</span>
               <span>Bulk CSV Import</span>
-            </Link>
-            <Link
-              href="/runs"
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-sm transition"
-            >
-              Run History
             </Link>
           </div>
         </div>
 
         {/* Admin Dashboard Operations Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link
+            href="/assignments"
+            className="p-6 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white hover:border-emerald-400 hover:shadow-md transition group"
+          >
+            <div className="text-2xl mb-2">🛏️</div>
+            <div className="font-bold text-slate-900 text-sm group-hover:text-emerald-700">Direct Room Allotment</div>
+            <div className="text-2xl font-extrabold text-emerald-700 my-1">Manual Assign</div>
+            <p className="text-xs text-slate-600">Assign waitlisted students &amp; move bed allocations</p>
+          </Link>
+
+          <Link
+            href="/room-changes"
+            className="p-6 rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-white hover:border-indigo-400 hover:shadow-md transition group"
+          >
+            <div className="text-2xl mb-2">🔄</div>
+            <div className="font-bold text-slate-900 text-sm group-hover:text-indigo-700">Room Change Requests</div>
+            <div className="text-2xl font-extrabold text-indigo-700 my-1">
+              {roomChangeReqs.filter((r) => r.status === 'PENDING').length} Pending
+            </div>
+            <p className="text-xs text-slate-600">Inspect justification, approve with bed, or decline</p>
+          </Link>
+
           <Link
             href="/inventory"
-            className="p-6 rounded-2xl border border-slate-200 bg-white hover:border-emerald-400 hover:shadow-md transition group"
+            className="p-6 rounded-2xl border border-slate-200 bg-white hover:border-slate-400 hover:shadow-md transition group"
           >
             <div className="text-2xl mb-2">🏢</div>
-            <div className="font-bold text-slate-900 text-sm group-hover:text-emerald-600">Campus Inventory</div>
+            <div className="font-bold text-slate-900 text-sm group-hover:text-slate-700">Campus Inventory</div>
             <div className="text-2xl font-extrabold text-slate-900 my-1">8,015 beds</div>
             <p className="text-xs text-slate-500">2,960 rooms across 5 hostels</p>
           </Link>
 
           <Link
             href="/cycles"
-            className="p-6 rounded-2xl border border-slate-200 bg-white hover:border-emerald-400 hover:shadow-md transition group"
+            className="p-6 rounded-2xl border border-slate-200 bg-white hover:border-slate-400 hover:shadow-md transition group"
           >
             <div className="text-2xl mb-2">🔄</div>
-            <div className="font-bold text-slate-900 text-sm group-hover:text-emerald-600">Allocation Cycles</div>
+            <div className="font-bold text-slate-900 text-sm group-hover:text-slate-700">Allocation Cycles</div>
             <div className="text-2xl font-extrabold text-slate-900 my-1">2026–2027</div>
             <p className="text-xs text-slate-500">Fall regular cycle published</p>
           </Link>
 
           <Link
             href="/runs"
-            className="p-6 rounded-2xl border border-slate-200 bg-white hover:border-emerald-400 hover:shadow-md transition group"
+            className="p-6 rounded-2xl border border-slate-200 bg-white hover:border-slate-400 hover:shadow-md transition group"
           >
             <div className="text-2xl mb-2">⚡</div>
-            <div className="font-bold text-slate-900 text-sm group-hover:text-emerald-600">Engine Runs</div>
+            <div className="font-bold text-slate-900 text-sm group-hover:text-slate-700">Engine Runs</div>
             <div className="text-2xl font-extrabold text-slate-900 my-1">1.445s</div>
             <p className="text-xs text-slate-500">8,015 applicants allocated</p>
           </Link>
 
           <Link
             href="/verifications"
-            className="p-6 rounded-2xl border border-slate-200 bg-white hover:border-emerald-400 hover:shadow-md transition group"
+            className="p-6 rounded-2xl border border-slate-200 bg-white hover:border-slate-400 hover:shadow-md transition group"
           >
             <div className="text-2xl mb-2">📑</div>
-            <div className="font-bold text-slate-900 text-sm group-hover:text-emerald-600">Quota Verifications</div>
-            <div className="text-2xl font-extrabold text-emerald-600 my-1">All Verified</div>
+            <div className="font-bold text-slate-900 text-sm group-hover:text-slate-700">Quota Verifications</div>
+            <div className="text-2xl font-extrabold text-slate-900 my-1">All Verified</div>
             <p className="text-xs text-slate-500">Disability &amp; category proofs</p>
           </Link>
         </div>

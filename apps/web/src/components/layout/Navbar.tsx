@@ -71,17 +71,22 @@ export function Navbar() {
         return [
           { href: '/', label: 'Overview' },
           { href: '/bedmap', label: 'Visual Bed Map' },
+          { href: '/room-changes', label: 'Room Requests' },
         ];
       case 'CHIEF_WARDEN':
         return [
           { href: '/', label: 'Overview' },
           { href: '/escalations', label: 'Escalations Queue' },
+          { href: '/room-changes', label: 'Room Requests' },
           { href: '/bedmap', label: 'Cross-Hostel Map' },
           { href: '/runs', label: 'Run History' },
         ];
       case 'ADMIN':
+      case 'SYSTEM_ADMIN':
         return [
           { href: '/', label: 'Overview' },
+          { href: '/assignments', label: 'Direct Allotment' },
+          { href: '/room-changes', label: 'Room Requests' },
           { href: '/inventory', label: 'Inventory' },
           { href: '/cycles', label: 'Cycles' },
           { href: '/runs', label: 'Engine Runs' },

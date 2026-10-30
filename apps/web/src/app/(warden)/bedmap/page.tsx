@@ -1,8 +1,15 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import Link from 'next/link';
+import {
+  StudentAllocation,
+  StudentRosterItem,
+  getStudentAllocation,
+  getStudentRoster,
+  assignStudentToBed,
+} from '../../../lib/allocationStore';
 
 export interface BedItem {
   id: string;
@@ -38,7 +45,9 @@ export interface RoomItem {
 function generateRoomsForHostelBlockFloor(
   hostelCode: string,
   blockName: string,
-  floorNum: number
+  floorNum: number,
+  adityaAlloc?: StudentAllocation,
+  roster?: StudentRosterItem[]
 ): RoomItem[] {
   const blockLetter = blockName.replace('Block ', '').trim();
   const isGround = floorNum === 0;
@@ -104,47 +113,92 @@ function generateRoomsForHostelBlockFloor(
 
     const isRoomAccessible = isGround;
 
-    // Check if this is Aditya Manas's room: Tagore Bhawan (TB), Block A, Floor 1, Room 104
-    const isAdityaRoom = hostelCode === 'TB' && blockLetter === 'A' && floorNum === 1 && num === 4;
+    // Check if Aditya Manas is in this room
+    let isAdityaRoom = false;
+    if (adityaAlloc) {
+      const allocFloor = adityaAlloc.floorName.includes('Ground')
+        ? 0
+        : parseInt(adityaAlloc.floorName.replace(/\D/g, '') || '1');
+      const allocBlock = adityaAlloc.blockName.replace('Block ', '').trim();
+      const allocRoomCode = adityaAlloc.roomNumber.replace(/^[A-Za-z]-?/, '');
+
+      isAdityaRoom =
+        hostelCode === adityaAlloc.hostelCode &&
+        blockLetter === allocBlock &&
+        floorNum === allocFloor &&
+        (roomCode === allocRoomCode || num === parseInt(allocRoomCode.slice(-1) || '0'));
+    } else {
+      isAdityaRoom = hostelCode === 'TB' && blockLetter === 'A' && floorNum === 1 && num === 4;
+    }
 
     const beds: BedItem[] = Array.from({ length: capacity }, (_, bIdx) => {
       const label = String.fromCharCode(65 + bIdx);
       const bedId = `${roomId}-${label.toLowerCase()}`;
 
-      // Special case: Aditya Manas in Room A-104
+      // Check if any student from studentRoster is assigned to this exact bed
+      const rosterStudent = roster?.find(
+        (s) =>
+          s.allocatedBed &&
+          s.allocatedBed.hostelCode === hostelCode &&
+          s.allocatedBed.blockName.replace('Block ', '').trim() === blockLetter &&
+          (s.allocatedBed.floorName.includes('Ground') ? 0 : parseInt(s.allocatedBed.floorName.replace(/\D/g, '') || '1')) === floorNum &&
+          (s.allocatedBed.roomNumber === roomCode || s.allocatedBed.roomNumber.slice(-1) === String(num)) &&
+          s.allocatedBed.bedLabel === label
+      );
+
+      if (rosterStudent) {
+        return {
+          id: bedId,
+          label,
+          isAccessible: isRoomAccessible,
+          status: 'OCCUPIED',
+          occupantName: rosterStudent.fullName,
+          occupantRoll: rosterStudent.rollNumber,
+          occupantQuota: rosterStudent.quotaCategory,
+          explanation: {
+            preferenceRank: 1,
+            quotaBucket: rosterStudent.quotaCategory,
+            compatibilityScore: 84,
+            rationale: `Manual/Direct bed assignment under ${rosterStudent.quotaCategory} Quota.`,
+          },
+        };
+      }
+
+      // Case: Aditya Manas in his allocated room
       if (isAdityaRoom) {
-        if (bIdx === 0) {
+        const adityaBedLabel = adityaAlloc?.bedLabel || 'A';
+        if (label === adityaBedLabel) {
           return {
             id: bedId,
             label,
-            isAccessible: false,
+            isAccessible: isRoomAccessible,
             status: 'OCCUPIED',
-            occupantName: 'Aditya Manas',
-            occupantRoll: '12326241',
+            occupantName: adityaAlloc?.studentName || 'Aditya Manas',
+            occupantRoll: adityaAlloc?.studentRoll || '12326241',
             occupantQuota: 'GENERAL',
             explanation: {
               preferenceRank: 1,
               quotaBucket: 'GENERAL',
               compatibilityScore: 82,
               rationale:
-                'First choice preference satisfied in Pass A. Paired with mutual roommate request Rohan Gupta (Compatibility Score: 82/100).',
+                adityaAlloc?.rationale ||
+                'First choice preference satisfied in Pass A. Roommate compatibility verified.',
             },
           };
-        } else {
+        } else if (adityaAlloc?.roommate) {
           return {
             id: bedId,
             label,
-            isAccessible: false,
+            isAccessible: isRoomAccessible,
             status: 'OCCUPIED',
-            occupantName: 'Rohan Gupta',
-            occupantRoll: '2023CS042',
+            occupantName: adityaAlloc.roommate.fullName,
+            occupantRoll: adityaAlloc.roommate.rollNumber,
             occupantQuota: 'GENERAL',
             explanation: {
               preferenceRank: 1,
               quotaBucket: 'GENERAL',
-              compatibilityScore: 82,
-              rationale:
-                'First choice preference satisfied in Pass A. Mutual roommate pairing with Aditya Manas (Compatibility Score: 82/100).',
+              compatibilityScore: adityaAlloc.roommate.compatibilityScore,
+              rationale: `Mutual pairing with ${adityaAlloc.studentName} (Compatibility: ${adityaAlloc.roommate.compatibilityScore}/100).`,
             },
           };
         }
@@ -241,6 +295,33 @@ export default function WardenBedMapPage() {
   // Selected Bed for drawer / inspector
   const [selectedBed, setSelectedBed] = useState<{ room: RoomItem; bed: BedItem } | null>(null);
 
+  // Live Allocation & Roster synchronization
+  const [liveAllocation, setLiveAllocation] = useState<StudentAllocation>(getStudentAllocation());
+  const [liveRoster, setLiveRoster] = useState<StudentRosterItem[]>(getStudentRoster());
+
+  // Direct Assign Modal for Vacant Bed
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignStudentRoll, setAssignStudentRoll] = useState('');
+  const [assignReason, setAssignReason] = useState('Direct room allotment authorized by Hostel Warden.');
+
+  const reloadData = () => {
+    setLiveAllocation(getStudentAllocation());
+    setLiveRoster(getStudentRoster());
+  };
+
+  useEffect(() => {
+    reloadData();
+    const handler = () => reloadData();
+    window.addEventListener('hostel_allocation_updated', handler);
+    window.addEventListener('hostel_roster_updated', handler);
+    window.addEventListener('hostel_room_change_updated', handler);
+    return () => {
+      window.removeEventListener('hostel_allocation_updated', handler);
+      window.removeEventListener('hostel_roster_updated', handler);
+      window.removeEventListener('hostel_room_change_updated', handler);
+    };
+  }, []);
+
   // Override Modal state (Invariant I5)
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [overrideCategory, setOverrideCategory] = useState('MEDICAL_ACCOMMODATION');
@@ -260,7 +341,9 @@ export default function WardenBedMapPage() {
     const rawRooms = generateRoomsForHostelBlockFloor(
       selectedHostelCode,
       selectedBlock,
-      selectedFloor
+      selectedFloor,
+      liveAllocation,
+      liveRoster
     );
 
     // Apply any overrides previously committed by the user
@@ -273,7 +356,7 @@ export default function WardenBedMapPage() {
         return bed;
       }),
     }));
-  }, [selectedHostelCode, selectedBlock, selectedFloor, overridesMap]);
+  }, [selectedHostelCode, selectedBlock, selectedFloor, overridesMap, liveAllocation, liveRoster]);
 
   // Filtered rooms based on status and search query
   const filteredRooms = useMemo(() => {
@@ -346,6 +429,47 @@ export default function WardenBedMapPage() {
       setShowOverrideModal(false);
       setSelectedBed(null);
       setOverrideReason('');
+      setTimeout(() => setSuccessMsg(''), 5000);
+    }
+  };
+
+  // Handle direct allocation of waitlisted student
+  const handleAssignBed = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBed) return;
+    if (assignReason.trim().length < 10) {
+      alert('Justification must be at least 10 characters (Invariant I5 requirement).');
+      return;
+    }
+
+    const student = liveRoster.find((s) => s.rollNumber === assignStudentRoll);
+    if (!student) {
+      alert('Student not found with roll number: ' + assignStudentRoll);
+      return;
+    }
+
+    const ok = assignStudentToBed(
+      student.rollNumber,
+      {
+        hostelCode: currentHostel.code,
+        hostelName: currentHostel.name,
+        blockName: selectedBlock,
+        floorName: selectedFloor === 0 ? 'Ground Floor (Accessible ♿)' : `Floor ${selectedFloor}`,
+        roomNumber: selectedBed.room.roomNumber,
+        bedLabel: selectedBed.bed.label,
+        roomType: selectedBed.room.type,
+      },
+      user?.fullName || 'Hostel Warden',
+      assignReason
+    );
+
+    if (ok) {
+      setSuccessMsg(
+        `Bed ${selectedBed.bed.label} in Room ${selectedBed.room.displayNumber} successfully allotted to ${student.fullName} (${student.rollNumber})!`
+      );
+      setShowAssignModal(false);
+      setSelectedBed(null);
+      reloadData();
       setTimeout(() => setSuccessMsg(''), 5000);
     }
   };
@@ -702,13 +826,27 @@ export default function WardenBedMapPage() {
               )}
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowOverrideModal(true)}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow"
-              >
-                Reassign / Override Bed (I5)
-              </button>
+            <div className="flex flex-wrap gap-2">
+              {selectedBed.bed.status === 'AVAILABLE' ? (
+                <button
+                  onClick={() => {
+                    const unalloc = liveRoster.find((s) => !s.allocatedBed);
+                    if (unalloc) setAssignStudentRoll(unalloc.rollNumber);
+                    setShowAssignModal(true);
+                  }}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5"
+                >
+                  <span>🛏️</span>
+                  <span>Assign Waitlisted Student</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowOverrideModal(true)}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow"
+                >
+                  Reassign / Override Bed (I5)
+                </button>
+              )}
               <button
                 onClick={() => setSelectedBed(null)}
                 className="px-3 py-2 border rounded-xl text-xs text-slate-500 hover:bg-slate-50"
@@ -846,6 +984,88 @@ export default function WardenBedMapPage() {
                   className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow"
                 >
                   Commit Override &bull; Invariant I5
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Waitlisted Student Modal */}
+      {showAssignModal && selectedBed && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                Direct Room Allotment
+              </span>
+              <h3 className="text-lg font-bold text-slate-900 mt-1">
+                Assign Bed: {selectedBed.room.displayNumber}, Bed {selectedBed.bed.label}
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Allot this vacant bed to a waitlisted or registered applicant. Invariant I8 checks will apply.
+              </p>
+            </div>
+
+            <form onSubmit={handleAssignBed} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                  Select Waitlisted Student
+                </label>
+                <select
+                  value={assignStudentRoll}
+                  onChange={(e) => setAssignStudentRoll(e.target.value)}
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-white text-slate-800 font-medium"
+                  required
+                >
+                  <option value="">-- Choose an applicant from roster --</option>
+                  {liveRoster
+                    .filter((s) => !s.allocatedBed)
+                    .map((s) => (
+                      <option key={s.id} value={s.rollNumber}>
+                        {s.fullName} ({s.rollNumber}) &bull; {s.programme} &bull; {s.quotaCategory}
+                      </option>
+                    ))}
+                  {/* Also allow already allocated students for re-assignment */}
+                  <optgroup label="Or Reassign Existing Student">
+                    {liveRoster
+                      .filter((s) => s.allocatedBed)
+                      .map((s) => (
+                        <option key={s.id} value={s.rollNumber}>
+                          {s.fullName} ({s.rollNumber}) &bull; Currently: {s.allocatedBed?.hostelCode} Room {s.allocatedBed?.roomNumber}
+                        </option>
+                      ))}
+                  </optgroup>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                  Warden / Admin Justification (&ge; 10 characters)
+                </label>
+                <textarea
+                  rows={3}
+                  value={assignReason}
+                  onChange={(e) => setAssignReason(e.target.value)}
+                  placeholder="State the administrative reason or waitlist ranking for this placement..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAssignModal(false)}
+                  className="px-4 py-2 border rounded-xl text-xs text-slate-600 hover:bg-slate-50 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow"
+                >
+                  Confirm &amp; Allot Bed
                 </button>
               </div>
             </form>

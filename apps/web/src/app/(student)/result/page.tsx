@@ -1,62 +1,103 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import Link from 'next/link';
+import {
+  StudentAllocation,
+  RoomChangeRequest,
+  getStudentAllocation,
+  submitRoomChangeRequest,
+  getRoomChangeRequests,
+} from '../../../lib/allocationStore';
 
 export default function StudentResultPage() {
   const { user } = useAuth();
 
-  const [allocation, setAllocation] = useState({
-    status: 'PUBLISHED',
-    academicYear: '2026–2027',
-    term: 'Fall Semester',
-    referenceId: 'ALLOT-2026-TB-104A-8219',
-    hostelName: 'Tagore Bhawan (TB)',
-    hostelCode: 'TB',
-    blockName: 'Block A',
-    floorName: 'Floor 1',
-    roomNumber: '104',
-    roomType: 'DOUBLE',
-    bedLabel: 'A',
-    isAccessible: false,
-    messAllotment: 'Tagore Dining Hall (Mess 1)',
-    reportingDate: 'October 15, 2026 (09:00 AM – 05:00 PM)',
-    wardenInCharge: 'Dr. R. K. Verma',
-    roommate: {
-      fullName: 'Rohan Gupta',
-      rollNumber: '2023CS042',
-      programme: 'B.Tech Computer Science & Engineering',
-      compatibilityScore: 82,
-      lifestyleMatch: {
-        sleepSchedule: 'Both Early Birds (95%)',
-        studyHabits: 'Silent in-room focus (90%)',
-        cleanliness: 'Neat & Organized (85%)',
-        noiseTolerance: 'Moderate (80%)',
-      },
-    },
-    rationale:
-      'First choice satisfied in Pass A under General Quota. Roommate compatibility optimized at 82/100 via seeded PRNG heuristic matching.',
-  });
+  const [allocation, setAllocation] = useState<StudentAllocation>(getStudentAllocation());
+  const [userRequests, setUserRequests] = useState<RoomChangeRequest[]>([]);
 
+  // Room Change Modal Form States
   const [showRoomChangeModal, setShowRoomChangeModal] = useState(false);
+  const [requestedHostelCode, setRequestedHostelCode] = useState('AB');
+  const [requestedRoomType, setRequestedRoomType] = useState('SINGLE');
+  const [preferredRoom, setPreferredRoom] = useState('');
   const [roomChangeCategory, setRoomChangeCategory] = useState('ACADEMIC_STUDY_ALIGNMENT');
   const [roomChangeReason, setRoomChangeReason] = useState('');
   const [roomChangeSuccess, setRoomChangeSuccess] = useState(false);
 
+  const availableHostels = [
+    { code: 'TB', name: 'Tagore Bhawan (TB)', gender: 'MALE' },
+    { code: 'AB', name: 'Aryabhatta Bhawan (AB)', gender: 'MALE' },
+    { code: 'GB', name: 'Gargi Bhawan (GB)', gender: 'FEMALE' },
+    { code: 'SB', name: 'Sarojini Bhawan (SB)', gender: 'FEMALE' },
+    { code: 'KB', name: 'Kalam International House (KB)', gender: 'COED' },
+  ];
+
+  const loadStudentData = () => {
+    const currentAlloc = getStudentAllocation();
+    setAllocation(currentAlloc);
+
+    const allRequests = getRoomChangeRequests();
+    // Filter requests for Aditya Manas
+    const studentRoll = user?.studentRollNumber || currentAlloc.studentRoll || '12326241';
+    const myReqs = allRequests.filter(
+      (r) => r.studentRoll === studentRoll || r.studentId === currentAlloc.studentId
+    );
+    setUserRequests(myReqs);
+  };
+
+  useEffect(() => {
+    loadStudentData();
+
+    const handleAllocUpdate = () => loadStudentData();
+    const handleReqUpdate = () => loadStudentData();
+
+    window.addEventListener('hostel_allocation_updated', handleAllocUpdate);
+    window.addEventListener('hostel_room_change_updated', handleReqUpdate);
+
+    return () => {
+      window.removeEventListener('hostel_allocation_updated', handleAllocUpdate);
+      window.removeEventListener('hostel_room_change_updated', handleReqUpdate);
+    };
+  }, [user]);
+
   const handleRoomChangeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (roomChangeReason.trim().length < 10) {
-      alert('Please provide a reason with at least 10 characters.');
+      alert('Please provide a detailed reason with at least 10 characters (Invariant I5).');
       return;
     }
+
+    const targetHostel = availableHostels.find((h) => h.code === requestedHostelCode) || availableHostels[0]!;
+
+    submitRoomChangeRequest({
+      studentId: allocation.studentId,
+      studentName: user?.fullName || allocation.studentName,
+      studentRoll: user?.studentRollNumber || allocation.studentRoll,
+      studentEmail: user?.email || allocation.email,
+      currentHostelCode: allocation.hostelCode,
+      currentHostelName: allocation.hostelName,
+      currentRoom: `${allocation.blockName.replace('Block ', '')}-${allocation.roomNumber}`,
+      currentBed: allocation.bedLabel,
+      requestedHostelCode: targetHostel.code,
+      requestedHostelName: targetHostel.name,
+      requestedRoomType,
+      preferredRoom: preferredRoom.trim() || undefined,
+      reasonCategory: roomChangeCategory,
+      reasonText: roomChangeReason,
+    });
+
     setRoomChangeSuccess(true);
     setShowRoomChangeModal(false);
+    setRoomChangeReason('');
+    setPreferredRoom('');
+    loadStudentData();
   };
 
   const handleDownloadLetter = () => {
-    const studentName = user?.fullName || 'Aditya Manas';
-    const regNo = user?.studentRollNumber || '12326241';
+    const studentName = user?.fullName || allocation.studentName;
+    const regNo = user?.studentRollNumber || allocation.studentRoll;
 
     const letterHtml = `
       <!DOCTYPE html>
@@ -96,7 +137,7 @@ export default function StudentResultPage() {
             <div class="meta-bar">
               <div><strong>Reference ID:</strong> ${allocation.referenceId}</div>
               <div><strong>Issue Date:</strong> ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-              <div><strong>Session:</strong> ${allocation.academicYear} &bull; ${allocation.term}</div>
+              <div><strong>Session:</strong> Academic Year 2026–2027 &bull; Fall Semester</div>
             </div>
 
             <table class="grid-table">
@@ -110,7 +151,7 @@ export default function StudentResultPage() {
               </tr>
               <tr>
                 <th>Programme & Department</th>
-                <td>B.Tech Computer Science & Engineering (Year 2)</td>
+                <td>${allocation.programme} (Year ${allocation.yearOfStudy})</td>
               </tr>
               <tr>
                 <th>Allotted Residence</th>
@@ -130,7 +171,7 @@ export default function StudentResultPage() {
               </tr>
               <tr>
                 <th>Assigned Roommate</th>
-                <td>${allocation.roommate.fullName} (Roll: ${allocation.roommate.rollNumber})</td>
+                <td>${allocation.roommate ? `${allocation.roommate.fullName} (Roll: ${allocation.roommate.rollNumber})` : 'Single Occupancy (No Roommate Assigned)'}</td>
               </tr>
               <tr>
                 <th>Reporting & Check-in Date</th>
@@ -191,14 +232,14 @@ export default function StudentResultPage() {
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
               Student Housing Allotment
             </span>
-            <span className="text-xs text-slate-500">&bull; Academic Year {allocation.academicYear}</span>
+            <span className="text-xs text-slate-500">&bull; Academic Year 2026–2027</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
             Official Allotment Confirmation
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
-            Student: <strong className="text-slate-800">{user?.fullName || 'Aditya Manas'}</strong> &bull; Registration No:{' '}
-            <strong className="text-slate-800">{user?.studentRollNumber || '12326241'}</strong>
+            Student: <strong className="text-slate-800">{user?.fullName || allocation.studentName}</strong> &bull; Registration No:{' '}
+            <strong className="text-slate-800">{user?.studentRollNumber || allocation.studentRoll}</strong>
           </p>
         </div>
 
@@ -215,13 +256,80 @@ export default function StudentResultPage() {
 
       {/* Success Notification if room change requested */}
       {roomChangeSuccess && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs sm:text-sm flex items-start gap-3 shadow-sm">
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs sm:text-sm flex items-start gap-3 shadow-sm animate-fade-in">
           <span className="text-xl">✓</span>
           <div>
-            <strong>Room Change Request Submitted to Warden</strong>
+            <strong>Room Change Request Submitted to Admin &amp; Warden</strong>
             <p className="mt-0.5 text-amber-800">
-              Your request has been cryptographically recorded in the audit trail. The Hostel Warden will review your request during the supplementary reallocation window.
+              Your request has been cryptographically recorded in the audit trail. Administrators and Wardens can view and process your request in their portal.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Active Room Change Requests History Box */}
+      {userRequests.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <span>📋</span> Your Room Change Requests ({userRequests.length})
+            </h3>
+            <span className="text-xs text-slate-500">Track Administrative Decisions</span>
+          </div>
+
+          <div className="space-y-3">
+            {userRequests.map((req) => (
+              <div
+                key={req.id}
+                className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-slate-800">{req.id}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        req.status === 'APPROVED'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : req.status === 'REJECTED'
+                          ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                          : 'bg-amber-100 text-amber-800 border border-amber-300'
+                      }`}
+                    >
+                      {req.status}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-700">
+                    Requested: <strong className="text-indigo-900">{req.requestedHostelName}</strong> ({req.requestedRoomType} Room)
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Reason: <em>&quot;{req.reasonText}&quot;</em>
+                  </div>
+
+                  {/* Decision details */}
+                  {req.status === 'APPROVED' && req.assignedRoom && (
+                    <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-900">
+                      <strong>✓ Approved by {req.decidedBy}:</strong> Assigned to {req.assignedRoom.hostelName}, Room {req.assignedRoom.roomNumber}, Bed {req.assignedRoom.bedLabel}.
+                      {req.decisionNotes && <div className="text-[11px] mt-0.5 text-emerald-800 font-medium">{req.decisionNotes}</div>}
+                    </div>
+                  )}
+
+                  {req.status === 'REJECTED' && (
+                    <div className="mt-2 p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-900">
+                      <strong>✕ Request Declined:</strong> {req.decisionNotes || 'Capacity or gender constraint prevented reassignment.'}
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-right text-[11px] text-slate-400 shrink-0">
+                  {new Date(req.submittedAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -261,15 +369,15 @@ export default function StudentResultPage() {
               <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Reporting Date
               </div>
-              <div className="text-sm font-bold text-slate-900 mt-1">October 15, 2026</div>
-              <div className="text-xs text-slate-500 mt-0.5">09:00 AM &ndash; 05:00 PM</div>
+              <div className="text-sm font-bold text-slate-900 mt-1">{allocation.reportingDate}</div>
+              <div className="text-xs text-slate-500 mt-0.5">Warden Office, Ground Floor</div>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
               <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Dining Hall Allotment
               </div>
-              <div className="text-sm font-bold text-slate-900 mt-1">Tagore Dining Hall</div>
+              <div className="text-sm font-bold text-slate-900 mt-1">{allocation.messAllotment}</div>
               <div className="text-xs text-slate-500 mt-0.5">Mess Pass Included</div>
             </div>
 
@@ -278,54 +386,62 @@ export default function StudentResultPage() {
                 Warden In-Charge
               </div>
               <div className="text-sm font-bold text-slate-900 mt-1">{allocation.wardenInCharge}</div>
-              <div className="text-xs text-slate-500 mt-0.5">Office: Ground Floor, TB</div>
+              <div className="text-xs text-slate-500 mt-0.5">Hostel Office &bull; {allocation.hostelCode}</div>
             </div>
           </div>
 
           {/* Roommate Details & Compatibility Meter */}
-          <div className="p-5 rounded-xl border border-indigo-100 bg-indigo-50/50 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-3">
-              <div>
-                <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">
-                  Roommate Assignment (Invariant I6)
-                </span>
-                <div className="text-lg font-bold text-slate-900 mt-0.5 flex items-center gap-2">
-                  <span>{allocation.roommate.fullName}</span>
-                  <span className="text-xs font-mono text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
-                    Roll: {allocation.roommate.rollNumber}
+          {allocation.roommate ? (
+            <div className="p-5 rounded-xl border border-indigo-100 bg-indigo-50/50 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-3">
+                <div>
+                  <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">
+                    Roommate Assignment (Invariant I6)
                   </span>
+                  <div className="text-lg font-bold text-slate-900 mt-0.5 flex items-center gap-2">
+                    <span>{allocation.roommate.fullName}</span>
+                    <span className="text-xs font-mono text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
+                      Roll: {allocation.roommate.rollNumber}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-600 mt-0.5">{allocation.roommate.programme}</div>
                 </div>
-                <div className="text-xs text-slate-600 mt-0.5">{allocation.roommate.programme}</div>
+
+                <div className="text-left sm:text-right">
+                  <div className="text-[11px] text-slate-500">Compatibility Score</div>
+                  <div className="text-2xl font-extrabold text-indigo-600">
+                    {allocation.roommate.compatibilityScore} <span className="text-xs text-slate-500 font-normal">/ 100</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="text-left sm:text-right">
-                <div className="text-[11px] text-slate-500">Compatibility Score</div>
-                <div className="text-2xl font-extrabold text-indigo-600">
-                  {allocation.roommate.compatibilityScore} <span className="text-xs text-slate-500 font-normal">/ 100</span>
+              {/* Compatibility Dimension Pills */}
+              {allocation.roommate.lifestyleMatch && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="p-2.5 rounded-lg bg-white border border-indigo-100 text-center">
+                    <span className="text-slate-500 block text-[10px]">Sleep Schedule</span>
+                    <span className="font-bold text-indigo-900">{allocation.roommate.lifestyleMatch.sleepSchedule}</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white border border-indigo-100 text-center">
+                    <span className="text-slate-500 block text-[10px]">Study Habits</span>
+                    <span className="font-bold text-indigo-900">{allocation.roommate.lifestyleMatch.studyHabits}</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white border border-indigo-100 text-center">
+                    <span className="text-slate-500 block text-[10px]">Cleanliness Level</span>
+                    <span className="font-bold text-indigo-900">{allocation.roommate.lifestyleMatch.cleanliness}</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white border border-indigo-100 text-center">
+                    <span className="text-slate-500 block text-[10px]">Noise Tolerance</span>
+                    <span className="font-bold text-indigo-900">{allocation.roommate.lifestyleMatch.noiseTolerance}</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-
-            {/* Compatibility Dimension Pills */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="p-2.5 rounded-lg bg-white border border-indigo-100 text-center">
-                <span className="text-slate-500 block text-[10px]">Sleep Schedule</span>
-                <span className="font-bold text-indigo-900">{allocation.roommate.lifestyleMatch.sleepSchedule}</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-white border border-indigo-100 text-center">
-                <span className="text-slate-500 block text-[10px]">Study Habits</span>
-                <span className="font-bold text-indigo-900">{allocation.roommate.lifestyleMatch.studyHabits}</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-white border border-indigo-100 text-center">
-                <span className="text-slate-500 block text-[10px]">Cleanliness Level</span>
-                <span className="font-bold text-indigo-900">{allocation.roommate.lifestyleMatch.cleanliness}</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-white border border-indigo-100 text-center">
-                <span className="text-slate-500 block text-[10px]">Noise Tolerance</span>
-                <span className="font-bold text-indigo-900">{allocation.roommate.lifestyleMatch.noiseTolerance}</span>
-              </div>
+          ) : (
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-600">
+              <strong>Single Room Occupancy:</strong> No roommate assigned. Single occupancy unit allocated under academic/special preference.
             </div>
-          </div>
+          )}
 
           {/* Allocation Rationale (Invariant I4) */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
@@ -347,7 +463,7 @@ export default function StudentResultPage() {
               onClick={() => setShowRoomChangeModal(true)}
               className="px-4 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-semibold transition"
             >
-              Request Room Change
+              Request Room Change &rarr;
             </button>
           </div>
         </div>
@@ -355,14 +471,69 @@ export default function StudentResultPage() {
 
       {/* Room Change Request Modal */}
       {showRoomChangeModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200">
-            <h3 className="text-lg font-bold text-slate-900">Request Room Reallocation</h3>
+            <div className="border-b border-slate-100 pb-2 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-slate-900">Request Room Reallocation</h3>
+              <button onClick={() => setShowRoomChangeModal(false)} className="text-slate-400 hover:text-slate-600">
+                ✕
+              </button>
+            </div>
             <p className="text-xs text-slate-500">
-              Submit an official room-change request for review by the Hostel Warden. Reassignments must comply with hard constraints (gender and capacity) and are logged in the immutable audit trail.
+              Submit an official room-change request for review by the Hostel Warden and Administration. Reassignments are logged in the immutable audit trail.
             </p>
 
             <form onSubmit={handleRoomChangeSubmit} className="space-y-4">
+              {/* Target Hostel */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                  Desired Hostel Residence
+                </label>
+                <select
+                  value={requestedHostelCode}
+                  onChange={(e) => setRequestedHostelCode(e.target.value)}
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-white text-slate-800"
+                >
+                  {availableHostels.map((h) => (
+                    <option key={h.code} value={h.code}>
+                      {h.name} &bull; {h.gender}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Desired Room Type & Optional Preferred Room */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                    Room Type
+                  </label>
+                  <select
+                    value={requestedRoomType}
+                    onChange={(e) => setRequestedRoomType(e.target.value)}
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-white text-slate-800"
+                  >
+                    <option value="SINGLE">Single Occupancy</option>
+                    <option value="DOUBLE">Double Occupancy</option>
+                    <option value="TRIPLE">Triple Occupancy</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                    Preferred Room (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={preferredRoom}
+                    onChange={(e) => setPreferredRoom(e.target.value)}
+                    placeholder="e.g. A-201 or 104"
+                    className="w-full p-2.5 border border-slate-300 rounded-lg text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Category */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
                   Reallocation Category
@@ -370,7 +541,7 @@ export default function StudentResultPage() {
                 <select
                   value={roomChangeCategory}
                   onChange={(e) => setRoomChangeCategory(e.target.value)}
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-white"
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-white text-slate-800"
                 >
                   <option value="ACADEMIC_STUDY_ALIGNMENT">Academic / Study Schedule Alignment</option>
                   <option value="MEDICAL_ACCOMMODATION">Medical / Physical Health Accommodation</option>
@@ -379,6 +550,7 @@ export default function StudentResultPage() {
                 </select>
               </div>
 
+              {/* Reason */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
                   Detailed Justification (Minimum 10 characters)
@@ -387,8 +559,8 @@ export default function StudentResultPage() {
                   rows={3}
                   value={roomChangeReason}
                   onChange={(e) => setRoomChangeReason(e.target.value)}
-                  placeholder="Explain why a room change is required..."
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs"
+                  placeholder="Explain clearly why a room change is required..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs text-slate-900"
                   required
                 />
               </div>
@@ -397,13 +569,13 @@ export default function StudentResultPage() {
                 <button
                   type="button"
                   onClick={() => setShowRoomChangeModal(false)}
-                  className="px-4 py-2 border rounded-lg text-xs text-slate-600 hover:bg-slate-50"
+                  className="px-4 py-2 border rounded-lg text-xs text-slate-600 hover:bg-slate-50 font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow"
                 >
                   Submit Request
                 </button>

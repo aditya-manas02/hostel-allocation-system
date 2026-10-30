@@ -213,11 +213,54 @@ router.post(
   },
 );
 
-// 6. Decide Room Change (Warden)
+// 6. List All Room Change Requests (Warden / Chief Warden / Admin)
+router.get(
+  '/room-changes',
+  authenticate,
+  requireRole('WARDEN', 'CHIEF_WARDEN', 'ADMIN', 'SYSTEM_ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const filter: any = {};
+      if (req.query.status) {
+        filter.status = req.query.status;
+      }
+      const requests = await RoomChangeRequestModel.find(filter)
+        .populate('studentId', 'fullName email studentRollNumber')
+        .populate('requestedHostelId', 'hostelName hostelCode genderDesignation')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      res.json(requests);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// 7. Student My Room Change Requests
+router.get(
+  '/room-changes/my',
+  authenticate,
+  requireRole('STUDENT'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const requests = await RoomChangeRequestModel.find({ studentId: req.user!.id })
+        .populate('requestedHostelId', 'hostelName hostelCode')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      res.json(requests);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// 8. Decide Room Change (Warden / Chief Warden / Admin)
 router.patch(
   '/room-change/:id',
   authenticate,
-  requireRole('WARDEN', 'CHIEF_WARDEN'),
+  requireRole('WARDEN', 'CHIEF_WARDEN', 'ADMIN', 'SYSTEM_ADMIN'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { status, wardenDecisionReason, cycleId } = req.body;
